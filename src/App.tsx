@@ -1,50 +1,24 @@
 import { useState } from 'react'
-import { Activity, Loader2, LogOut, Sun, Moon, MonitorSmartphone } from 'lucide-react'
-import { useTheme, type Theme } from '@/hooks/useTheme'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useTrackedRepos } from '@/hooks/useRepos'
 import { ToastViewport } from '@/components/shell/Toast'
 import { PatEntryScreen } from '@/components/onboarding/PatEntryScreen'
 import { RepoPicker } from '@/components/onboarding/RepoPicker'
-import { useTrackedRepos } from '@/hooks/useRepos'
+import { Dashboard } from '@/components/shell/Dashboard'
 import { DEMO_VIEWER, DEMO_REPOS } from '@/lib/demo'
 import type { Viewer } from '@/lib/github/types'
+import type { TrackedRepo } from '@/hooks/useRepos'
 
-function ThemeToggle() {
-  const [theme, setTheme] = useTheme()
-  const options: { value: Theme; label: string; Icon: typeof Sun }[] = [
-    { value: 'dark', label: 'Dark', Icon: Moon },
-    { value: 'light', label: 'Light', Icon: Sun },
-    { value: 'auto', label: 'Auto', Icon: MonitorSmartphone },
-  ]
-  return (
-    <div
-      className="flex items-center border border-[var(--color-border)] rounded-md overflow-hidden"
-      role="group"
-      aria-label="Theme"
-    >
-      {options.map(({ value, label, Icon }) => {
-        const active = theme === value
-        return (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setTheme(value)}
-            aria-label={`Theme: ${label}`}
-            aria-pressed={active}
-            title={label}
-            className={`min-w-[44px] min-h-[36px] flex items-center justify-center px-2 text-xs transition-colors ${
-              active
-                ? 'bg-[var(--color-canvas-subtle)] text-[var(--color-fg-default)]'
-                : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]'
-            }`}
-          >
-            <Icon className="w-4 h-4" aria-hidden />
-          </button>
-        )
-      })}
-    </div>
-  )
-}
+const DEMO_TRACKED: TrackedRepo[] = DEMO_REPOS.map((r) => ({
+  id: r.id,
+  nameWithOwner: r.nameWithOwner,
+  description: r.description,
+  isPrivate: r.isPrivate,
+  isFork: r.isFork,
+  isArchived: r.isArchived,
+  pushedAt: r.pushedAt,
+}))
 
 function App() {
   const { state, signIn, signOut } = useAuth()
@@ -96,68 +70,20 @@ function App() {
 
   const viewer: Viewer =
     state.status === 'signed-in' ? state.viewer : DEMO_VIEWER
-  const trackedRepos =
-    isDemo
-      ? DEMO_REPOS.map((r) => ({
-          id: r.id,
-          nameWithOwner: r.nameWithOwner,
-          description: r.description,
-          isPrivate: r.isPrivate,
-          isFork: r.isFork,
-          isArchived: r.isArchived,
-          pushedAt: r.pushedAt,
-        }))
-      : repos.state.status === 'configured'
-        ? repos.state.repos
-        : []
+  const trackedRepos = isDemo
+    ? DEMO_TRACKED
+    : repos.state.status === 'configured'
+      ? repos.state.repos
+      : []
 
   return (
     <>
-      <main className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-canvas-subtle)]">
-          <div className="flex items-center gap-2">
-            <Activity
-              className="w-5 h-5 text-[var(--color-accent)]"
-              aria-hidden
-            />
-            <span className="text-sm font-semibold">OctoPulse</span>
-            {isDemo && (
-              <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-[var(--color-attention-bg)] text-[var(--color-attention)] border border-[var(--color-attention-border)]">
-                Demo
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <div className="flex items-center gap-2 text-sm">
-              <img
-                src={viewer.avatarUrl}
-                alt=""
-                className="w-6 h-6 rounded-full"
-              />
-              <span className="text-[var(--color-fg-muted)]">
-                @{viewer.login}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleExit}
-              className="min-w-[44px] min-h-[36px] flex items-center gap-1 px-2 text-xs text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)] border border-[var(--color-border)] rounded-md"
-              aria-label={isDemo ? 'Exit demo' : 'Sign out'}
-            >
-              <LogOut className="w-3.5 h-3.5" aria-hidden />
-              <span>{isDemo ? 'Exit demo' : 'Sign out'}</span>
-            </button>
-          </div>
-        </header>
-
-        <section className="flex-1 flex items-center justify-center p-8 text-[var(--color-fg-muted)] text-sm">
-          Tracking {trackedRepos.length}{' '}
-          {trackedRepos.length === 1 ? 'repo' : 'repos'}. Dashboard surfaces
-          appear here. (Steps 7–10.)
-        </section>
-      </main>
-
+      <Dashboard
+        viewer={viewer}
+        isDemo={isDemo}
+        trackedRepos={trackedRepos}
+        onSignOut={handleExit}
+      />
       <ToastViewport />
     </>
   )
