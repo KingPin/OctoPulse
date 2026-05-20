@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Inbox, GitBranch, Hourglass, Loader2 } from 'lucide-react'
 import { TopBar } from './TopBar'
+import { SettingsPanel } from './SettingsPanel'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { ActionInbox } from '@/components/inbox/ActionInbox'
 import { categorize } from '@/components/inbox/categorize'
@@ -15,6 +16,7 @@ interface Props {
   isDemo: boolean
   trackedRepos: TrackedRepo[]
   onSignOut: () => void
+  onEditRepos: () => void
 }
 
 interface SectionHeaderProps {
@@ -46,9 +48,15 @@ function SectionHeader({ icon: Icon, title, count, caption }: SectionHeaderProps
   )
 }
 
-export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
+export function Dashboard({
+  viewer,
+  isDemo,
+  trackedRepos,
+  onSignOut,
+  onEditRepos,
+}: Props) {
   const { state, refresh } = useDashboardData({ trackedRepos, isDemo })
-  const [, setSettingsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const inboxCount = useMemo(
     () => categorize(state.snapshots, viewer.login).length,
     [state.snapshots, viewer.login],
@@ -124,6 +132,15 @@ export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
           </>
         )}
       </div>
+
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        trackedRepos={trackedRepos}
+        isDemo={isDemo}
+        onEditRepos={onEditRepos}
+        onSignOut={onSignOut}
+      />
     </main>
   )
 }

@@ -83,6 +83,7 @@ function App() {
         isDemo={isDemo}
         trackedRepos={trackedRepos}
         onSignOut={handleExit}
+        onEditRepos={repos.reset}
       />
       <ToastViewport />
     </>
