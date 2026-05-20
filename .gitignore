@@ -34,3 +34,8 @@ dist-ssr
 # Test / coverage
 coverage/
 *.lcov
+
+# Playwright scratch
+.playwright-mcp/
+*.screenshot.png
+step*-*.png
