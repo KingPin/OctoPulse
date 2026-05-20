@@ -11,7 +11,8 @@ export function get<T>(key: StorageKey): T | null {
   try {
     const raw = localStorage.getItem(PREFIX + key)
     return raw ? (JSON.parse(raw) as T) : null
-  } catch {
+  } catch (e) {
+    console.error(`octopulse: failed to parse ${key}`, e)
     return null
   }
 }
