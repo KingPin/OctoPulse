@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* GitHub-dark palette */
+  --color-canvas: #0d1117;
+  --color-canvas-subtle: #161b22;
+  --color-canvas-inset: #010409;
+  --color-border: #30363d;
+  --color-border-muted: #21262d;
+  --color-fg-default: #c9d1d9;
+  --color-fg-muted: #8b949e;
+  --color-fg-subtle: #6e7681;
+  --color-accent: #2f81f7;
+  --color-success: #3fb950;
+  --color-success-bg: #0f2419;
+  --color-success-border: #1a3a26;
+  --color-attention: #d29922;
+  --color-attention-bg: #3a2d0a;
+  --color-attention-border: #54420f;
+  --color-danger: #f85149;
+  --color-danger-bg: #3c1518;
+  --color-danger-border: #5a1d22;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+html {
+  background: var(--color-canvas);
+  color: var(--color-fg-default);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.light {
+  --color-canvas: #ffffff;
+  --color-canvas-subtle: #f6f8fa;
+  --color-canvas-inset: #f6f8fa;
+  --color-border: #d0d7de;
+  --color-border-muted: #d8dee4;
+  --color-fg-default: #1f2328;
+  --color-fg-muted: #59636e;
+  --color-fg-subtle: #818b98;
+  --color-accent: #0969da;
+  --color-success: #1a7f37;
+  --color-success-bg: #dafbe1;
+  --color-success-border: #aceebb;
+  --color-attention: #9a6700;
+  --color-attention-bg: #fff8c5;
+  --color-attention-border: #eac54f;
+  --color-danger: #d1242f;
+  --color-danger-bg: #ffebe9;
+  --color-danger-border: #ffcecb;
+}
+
+body {
+  margin: 0;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: white;
+}
