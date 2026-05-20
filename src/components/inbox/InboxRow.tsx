@@ -5,6 +5,7 @@ import {
   GitPullRequest,
   Loader2,
   MessageSquare,
+  Sparkles,
   X,
 } from 'lucide-react'
 import { CATEGORY_META, type InboxItem } from './categorize'
@@ -14,6 +15,8 @@ interface Props {
   canAct: boolean
   isBusy: boolean
   onAct: () => void
+  canSummarize: boolean
+  onSummarize: () => void
 }
 
 const TONE_CLASS: Record<
@@ -38,7 +41,14 @@ function formatAge(days: number): string {
   return `${Math.floor(days / 365)}y`
 }
 
-export function InboxRow({ item, canAct, isBusy, onAct }: Props) {
+export function InboxRow({
+  item,
+  canAct,
+  isBusy,
+  onAct,
+  canSummarize,
+  onSummarize,
+}: Props) {
   const meta = CATEGORY_META[item.category]
   const Icon = item.isPullRequest ? GitPullRequest : MessageSquare
   const ActionIcon = item.isPullRequest ? GitMerge : X
@@ -76,6 +86,17 @@ export function InboxRow({ item, canAct, isBusy, onAct }: Props) {
       <span className="text-xs text-[var(--color-fg-subtle)] shrink-0">
         {formatAge(item.ageDays)}
       </span>
+
+      {canSummarize && (
+        <button
+          type="button"
+          onClick={onSummarize}
+          aria-label={`Summarize ${item.repoNameWithOwner}#${item.number}`}
+          className="shrink-0 min-h-[28px] inline-flex items-center justify-center px-2 text-xs border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)]"
+        >
+          <Sparkles className="w-3 h-3" aria-hidden />
+        </button>
+      )}
 
       {canAct && (
         <button

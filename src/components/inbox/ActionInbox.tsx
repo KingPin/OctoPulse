@@ -3,7 +3,9 @@ import { Inbox } from 'lucide-react'
 import { categorize, type InboxItem } from './categorize'
 import { InboxRow } from './InboxRow'
 import { ConfirmModal } from '@/components/shell/ConfirmModal'
+import { SummarizerModal } from '@/components/llm/SummarizerModal'
 import { closeIssue, mergePullRequest } from '@/lib/github/mutations'
+import { useLLM } from '@/hooks/useLLM'
 import { toast } from '@/hooks/useToast'
 import type { RepoSnapshot } from '@/types/github'
 
@@ -30,7 +32,10 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
   )
 
   const [target, setTarget] = useState<InboxItem | null>(null)
+  const [summarizeTarget, setSummarizeTarget] = useState<InboxItem | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const { isReady: llmReady } = useLLM()
+  const canSummarize = isDemo || llmReady
 
   const runAction = async () => {
     if (!target) return
@@ -89,6 +94,8 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
               canAct={canAct}
               isBusy={busyId === item.id}
               onAct={() => setTarget(item)}
+              canSummarize={canSummarize}
+              onSummarize={() => setSummarizeTarget(item)}
             />
           )
         })}
@@ -113,6 +120,12 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
         busy={busyId !== null}
         onConfirm={runAction}
         onCancel={() => setTarget(null)}
+      />
+
+      <SummarizerModal
+        item={summarizeTarget}
+        isDemo={isDemo}
+        onClose={() => setSummarizeTarget(null)}
       />
     </>
   )
