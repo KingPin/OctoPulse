@@ -55,7 +55,7 @@ function Row({ item }: { item: StaleItem }) {
       <span
         className={`text-xs font-mono shrink-0 ${LEVEL_TEXT[item.level]}`}
       >
-        {item.daysQuiet}d quiet
+        {item.daysQuiet}d<span className="hidden sm:inline"> quiet</span>
       </span>
       <ExternalLink
         className="w-3.5 h-3.5 text-[var(--color-fg-subtle)] opacity-0 group-hover:opacity-100 shrink-0"

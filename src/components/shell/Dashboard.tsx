@@ -28,7 +28,7 @@ interface SectionHeaderProps {
 
 function SectionHeader({ icon: Icon, title, count, caption }: SectionHeaderProps) {
   return (
-    <div className="flex items-baseline justify-between mb-3">
+    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-3">
       <div className="flex items-center gap-2">
         <Icon
           className="w-4 h-4 text-[var(--color-fg-muted)]"
@@ -78,7 +78,7 @@ export function Dashboard({
         onSignOut={onSignOut}
       />
 
-      <div className="flex-1 max-w-6xl w-full mx-auto px-6 py-6 flex flex-col gap-10">
+      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-10">
         {state.isFetching && state.snapshots.length === 0 && (
           <div className="flex items-center justify-center gap-2 py-16 text-sm text-[var(--color-fg-muted)]">
             <Loader2 className="w-4 h-4 animate-spin" aria-hidden />

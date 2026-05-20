@@ -56,7 +56,7 @@ function ThemeToggle() {
             aria-label={`Theme: ${label}`}
             aria-pressed={active}
             title={label}
-            className={`min-w-[36px] min-h-[32px] flex items-center justify-center px-2 text-xs transition-colors ${
+            className={`min-w-[36px] min-h-[36px] flex items-center justify-center px-2 text-xs transition-colors ${
               active
                 ? 'bg-[var(--color-canvas-subtle)] text-[var(--color-fg-default)]'
                 : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]'
@@ -80,7 +80,7 @@ export function TopBar({
   onSignOut,
 }: Props) {
   return (
-    <header className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-canvas-subtle)] sticky top-0 z-10">
+    <header className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-canvas-subtle)] sticky top-0 z-10">
       <div className="flex items-center gap-2">
         <Activity
           className="w-5 h-5 text-[var(--color-accent)]"
@@ -102,7 +102,7 @@ export function TopBar({
             disabled={isFetching}
             aria-label="Refresh dashboard"
             title="Refresh"
-            className="min-w-[36px] min-h-[32px] flex items-center justify-center border border-[var(--color-border)] rounded-md hover:text-[var(--color-fg-default)] disabled:opacity-50"
+            className="min-w-[36px] min-h-[36px] flex items-center justify-center border border-[var(--color-border)] rounded-md hover:text-[var(--color-fg-default)] disabled:opacity-50"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`}
@@ -121,7 +121,7 @@ export function TopBar({
           onClick={onOpenSettings}
           aria-label="Settings"
           title="Settings"
-          className="min-w-[36px] min-h-[32px] flex items-center justify-center border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]"
+          className="min-w-[36px] min-h-[36px] flex items-center justify-center border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]"
         >
           <Settings className="w-3.5 h-3.5" aria-hidden />
         </button>
@@ -140,7 +140,7 @@ export function TopBar({
         <button
           type="button"
           onClick={onSignOut}
-          className="min-w-[36px] min-h-[32px] flex items-center gap-1 px-2 text-xs text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)] border border-[var(--color-border)] rounded-md"
+          className="min-w-[36px] min-h-[36px] flex items-center gap-1 px-2 text-xs text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)] border border-[var(--color-border)] rounded-md"
           aria-label={isDemo ? 'Exit demo' : 'Sign out'}
         >
           <LogOut className="w-3.5 h-3.5" aria-hidden />

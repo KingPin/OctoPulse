@@ -90,7 +90,7 @@ export function InboxRow({
         />
       </a>
 
-      <span className="text-xs text-[var(--color-fg-subtle)] shrink-0">
+      <span className="hidden sm:inline text-xs text-[var(--color-fg-subtle)] shrink-0">
         {formatAge(item.ageDays)}
       </span>
 
@@ -120,7 +120,7 @@ export function InboxRow({
           ) : (
             <Check className="w-3 h-3" aria-hidden />
           )}
-          {actionLabel}
+          <span className="hidden sm:inline">{actionLabel}</span>
         </button>
       )}
     </div>
