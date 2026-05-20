@@ -5,6 +5,7 @@ import type { Viewer } from '@/lib/github/types'
 
 export type AuthState =
   | { status: 'loading' }
+  | { status: 'validating'; token: string; viewer: Viewer }
   | { status: 'signed-out' }
   | { status: 'signed-in'; token: string; viewer: Viewer }
 
@@ -29,7 +30,7 @@ export function useAuth(): {
     }
     const gen = generationRef.current
     setState({
-      status: 'signed-in',
+      status: 'validating',
       token: stored.token,
       viewer: stored.viewer,
     })
@@ -38,7 +39,13 @@ export function useAuth(): {
       if (!r.ok && r.reason === 'unauthorized') {
         storage.remove('githubToken')
         setState({ status: 'signed-out' })
+        return
       }
+      setState({
+        status: 'signed-in',
+        token: stored.token,
+        viewer: stored.viewer,
+      })
     })
   }, [])
 

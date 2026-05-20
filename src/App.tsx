@@ -25,7 +25,11 @@ function App() {
   const repos = useTrackedRepos()
   const [demo, setDemo] = useState(false)
 
-  if (state.status === 'loading' || repos.state.status === 'loading') {
+  if (
+    state.status === 'loading' ||
+    state.status === 'validating' ||
+    repos.state.status === 'loading'
+  ) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <Loader2
