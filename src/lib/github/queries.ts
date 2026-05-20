@@ -48,7 +48,7 @@ export const REPO_QUERY = /* GraphQL */ `
               login
             }
           }
-          comments(last: 20) {
+          comments(last: 100) {
             totalCount
             nodes {
               authorAssociation
@@ -103,7 +103,7 @@ export const REPO_QUERY = /* GraphQL */ `
               login
             }
           }
-          comments(last: 20) {
+          comments(last: 100) {
             totalCount
             nodes {
               authorAssociation
