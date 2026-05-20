@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ExternalLink, Loader2, RefreshCw, Sparkles, X } from 'lucide-react'
 import { useLLM } from '@/hooks/useLLM'
 import { fetchThread, formatThreadForLLM } from '@/lib/github/threads'
@@ -37,14 +37,22 @@ function parseRepo(nameWithOwner: string): { owner: string; name: string } | nul
 export function SummarizerModal({ item, isDemo, onClose }: Props) {
   const { getProvider } = useLLM()
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
+  const acRef = useRef<AbortController | null>(null)
 
   const run = useCallback(async (current: InboxItem) => {
+    acRef.current?.abort()
+    const ac = new AbortController()
+    acRef.current = ac
+    const { signal } = ac
+
     setStatus({ kind: 'loading', phase: 'thread' })
 
     if (isDemo) {
       await new Promise((r) => setTimeout(r, 400))
+      if (signal.aborted) return
       setStatus({ kind: 'loading', phase: 'llm' })
       await new Promise((r) => setTimeout(r, 600))
+      if (signal.aborted) return
       setStatus({ kind: 'ready', bullets: demoBullets(current) })
       return
     }
@@ -65,15 +73,19 @@ export function SummarizerModal({ item, isDemo, onClose }: Props) {
     }
 
     try {
-      const messages = await fetchThread(parsed.owner, parsed.name, current.number)
+      const messages = await fetchThread(parsed.owner, parsed.name, current.number, signal)
+      if (signal.aborted) return
       setStatus({ kind: 'loading', phase: 'llm' })
-      const bullets = await provider.summarize(formatThreadForLLM(messages))
+      const bullets = await provider.summarize(formatThreadForLLM(messages), signal)
+      if (signal.aborted) return
       if (bullets.length === 0) {
         setStatus({ kind: 'error', message: 'Got empty summary from provider' })
       } else {
         setStatus({ kind: 'ready', bullets })
       }
     } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      if (signal.aborted) return
       const msg = e instanceof Error ? e.message : 'Summarization failed'
       setStatus({ kind: 'error', message: msg })
       toast(msg, 'error')
@@ -81,8 +93,17 @@ export function SummarizerModal({ item, isDemo, onClose }: Props) {
   }, [getProvider, isDemo])
 
   useEffect(() => {
-    if (item) run(item)
-    else setStatus({ kind: 'idle' })
+    if (item) {
+      run(item)
+    } else {
+      acRef.current?.abort()
+      acRef.current = null
+      setStatus({ kind: 'idle' })
+    }
+    return () => {
+      acRef.current?.abort()
+      acRef.current = null
+    }
   }, [item, run])
 
   useEffect(() => {
