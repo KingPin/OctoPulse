@@ -112,6 +112,6 @@ If you don't want OctoPulse to keep a token at all, use **demo mode**.
 
 Vite 8 · React 19 · TypeScript strict · Tailwind v4 · Lucide React · Vitest
 
-GitHub data: GraphQL primary (`/graphql`) with ETag-cached REST fallbacks for the few endpoints GraphQL doesn't cover (merge PR, close issue, fetch issue body, fetch comments).
+GitHub data: GraphQL primary (`/graphql`) with REST fallbacks for the few endpoints GraphQL doesn't cover (merge PR, close issue, fetch issue body, fetch comments).
 
 Refresh strategy: load + manual button + on tab-focus if the cache is older than 5 minutes.
