@@ -14,6 +14,9 @@ export interface StaleItem {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
+// Per-thread feed thresholds: looser than RepoPulse's 3/7 (see pulse/health.ts)
+// because this list shows individual rows, so we only surface threads that
+// genuinely look forgotten rather than just briefly idle.
 const STALE_AMBER_DAYS = 7
 const STALE_RED_DAYS = 14
 
