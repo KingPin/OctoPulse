@@ -4,6 +4,7 @@ import { TopBar } from './TopBar'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { ActionInbox } from '@/components/inbox/ActionInbox'
 import { categorize } from '@/components/inbox/categorize'
+import { RepoPulseGrid } from '@/components/pulse/RepoPulseGrid'
 import type { TrackedRepo } from '@/hooks/useRepos'
 import type { Viewer } from '@/lib/github/types'
 
@@ -102,9 +103,7 @@ export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
                 count={state.snapshots.length}
                 caption="Health of each tracked repo"
               />
-              <div className="p-6 text-sm text-[var(--color-fg-muted)] border border-dashed border-[var(--color-border)] rounded-md text-center">
-                Pulse grid coming in step 9.
-              </div>
+              <RepoPulseGrid snapshots={state.snapshots} />
             </section>
 
             <section aria-label="Stale watch">
