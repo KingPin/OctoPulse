@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { rest } from '@/lib/github/client'
+import { GitHubError, rest } from '@/lib/github/client'
 import { useLLM } from './useLLM'
-import type { IssueIntent } from '@/lib/llm'
+import { LLMError, type IssueIntent } from '@/lib/llm'
 import type { InboxItem } from '@/components/inbox/categorize'
+import { toast } from './useToast'
 
 export type ClassificationState = 'loading' | IssueIntent | null
 
@@ -82,6 +83,7 @@ export function useClassifications({
     setResults(initial)
 
     ;(async () => {
+      let llmAuthBailed = false
       for (const t of targets) {
         if (ac.signal.aborted) return
         if (cacheRef.current.has(t.id)) continue
@@ -105,13 +107,32 @@ export function useClassifications({
             next.set(t.id, intent)
             return next
           })
-        } catch {
+        } catch (e: unknown) {
           if (ac.signal.aborted) return
+          if (e instanceof DOMException && e.name === 'AbortError') return
+
+          const status =
+            e instanceof LLMError || e instanceof GitHubError ? e.status : undefined
+          const isAuthError = status === 401 || status === 403
+          const isLLMAuthError = e instanceof LLMError && isAuthError
+
+          console.error('octopulse: classification failed', t.id, e)
+
           setResults((prev) => {
             const next = new Map(prev)
             next.set(t.id, null)
             return next
           })
+
+          if (isLLMAuthError && !llmAuthBailed) {
+            llmAuthBailed = true
+            toast(
+              'LLM classification disabled — check API key in Settings.',
+              'error',
+              6000,
+            )
+            return
+          }
         }
       }
     })()
