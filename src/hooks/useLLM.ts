@@ -14,7 +14,7 @@ interface UseLLMResult {
   isReady: boolean
   setProviderId: (id: LLMProviderId) => void
   update: (patch: Partial<LLMConfig>) => void
-  save: () => void
+  save: () => boolean
   clear: () => void
   /** Returns a provider instance built from the *saved* config, or null. */
   getProvider: () => LLMProvider | null
@@ -47,7 +47,7 @@ export function useLLM(): UseLLMResult {
   }, [])
 
   const save = useCallback(() => {
-    storage.set<LLMConfig>('llmConfig', config)
+    return storage.set<LLMConfig>('llmConfig', config)
   }, [config])
 
   const clear = useCallback(() => {

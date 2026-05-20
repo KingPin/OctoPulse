@@ -16,11 +16,13 @@ export function get<T>(key: StorageKey): T | null {
   }
 }
 
-export function set<T>(key: StorageKey, value: T): void {
+export function set<T>(key: StorageKey, value: T): boolean {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value))
+    return true
   } catch (e) {
     console.warn(`octopulse: failed to persist ${key}`, e)
+    return false
   }
 }
 

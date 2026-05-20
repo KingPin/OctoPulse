@@ -30,7 +30,15 @@ export function LLMSettings() {
       toast(baseUrlCheck.reason ?? 'Invalid base URL', 'error', 6000)
       return
     }
-    save()
+    const ok = save()
+    if (!ok) {
+      toast(
+        'Settings could not be saved — localStorage may be full or blocked.',
+        'error',
+        6000,
+      )
+      return
+    }
     setDirty(false)
     toast('LLM settings saved', 'success', 2000)
   }
