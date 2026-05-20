@@ -23,11 +23,14 @@ async function generate(
 ): Promise<string> {
   const url = `${config.baseUrl.replace(/\/$/, '')}/models/${encodeURIComponent(
     config.model,
-  )}:generateContent?key=${encodeURIComponent(config.apiKey)}`
+  )}:generateContent`
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'x-goog-api-key': config.apiKey,
+    },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemInstruction }] },
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
