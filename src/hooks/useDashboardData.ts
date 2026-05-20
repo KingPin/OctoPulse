@@ -67,39 +67,63 @@ export function useDashboardData({
     setState((s) => ({ ...s, isFetching: true, error: null }))
 
     try {
-      const results = await Promise.all(
+      const settled = await Promise.allSettled(
         trackedRepos.map(async (repo) => {
           const parsed = splitOwnerRepo(repo.nameWithOwner)
-          if (!parsed) return null
+          if (!parsed) throw new Error(`Invalid repo path: ${repo.nameWithOwner}`)
           const r: { data: RepoQueryResponse; rateLimit: RateLimit } =
             await graphql<RepoQueryResponse>(
               REPO_QUERY,
               parsed,
               ac.signal,
             )
-          return r
+          return { repo, result: r }
         }),
       )
 
       if (ac.signal.aborted) return
 
       const snapshots: RepoSnapshot[] = []
+      const failures: Array<{ nameWithOwner: string; reason: string }> = []
       let remaining: number | null = null
-      for (const r of results) {
-        if (!r) continue
-        if (r.data.repository) snapshots.push(r.data.repository)
-        if (r.rateLimit.remaining !== null) remaining = r.rateLimit.remaining
-      }
+      settled.forEach((outcome, i) => {
+        const repo = trackedRepos[i]
+        if (!repo) return
+        if (outcome.status === 'fulfilled') {
+          const { result } = outcome.value
+          if (result.data.repository) snapshots.push(result.data.repository)
+          if (result.rateLimit.remaining !== null) remaining = result.rateLimit.remaining
+        } else {
+          const reason =
+            outcome.reason instanceof Error
+              ? outcome.reason.message
+              : String(outcome.reason)
+          failures.push({ nameWithOwner: repo.nameWithOwner, reason })
+        }
+      })
 
       const now = Date.now()
       storage.set<number>('lastFetchAt', now)
+      const errorMsg =
+        failures.length === 0
+          ? null
+          : failures.length === trackedRepos.length
+            ? `Failed to load any repos: ${failures[0]?.reason ?? 'unknown error'}`
+            : `Failed to load ${failures.length} of ${trackedRepos.length} repos`
       setState({
         snapshots,
         lastUpdatedAt: now,
         isFetching: false,
-        error: null,
+        error: errorMsg,
         rateLimitRemaining: remaining,
       })
+      if (failures.length > 0 && failures.length < trackedRepos.length) {
+        toast(
+          `Couldn't load ${failures.map((f) => f.nameWithOwner).join(', ')}`,
+          'warning',
+          6000,
+        )
+      }
     } catch (e: unknown) {
       if (ac.signal.aborted) return
       const message = e instanceof Error ? e.message : 'Failed to load repos'
