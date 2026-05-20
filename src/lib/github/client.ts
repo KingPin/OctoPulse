@@ -80,6 +80,10 @@ export async function graphql<T = unknown>(
 
     if (res.status === 403 || res.status === 429) {
       // Abuse / secondary rate limit. Honor Retry-After if present.
+      lastError = new GitHubError(
+        `HTTP ${res.status} ${res.statusText}`,
+        res.status,
+      )
       const retryAfter = res.headers.get('retry-after')
       const waitMs = retryAfter ? Number(retryAfter) * 1000 : 2 ** attempt * 1000
       await sleep(waitMs)
@@ -87,6 +91,10 @@ export async function graphql<T = unknown>(
     }
 
     if (res.status >= 500) {
+      lastError = new GitHubError(
+        `HTTP ${res.status} ${res.statusText}`,
+        res.status,
+      )
       await sleep(2 ** attempt * 500)
       continue
     }
@@ -116,6 +124,7 @@ export async function graphql<T = unknown>(
     return { data: json.data, rateLimit }
   }
 
+  if (lastError instanceof GitHubError) throw lastError
   throw new GitHubError(
     lastError?.message ?? 'GitHub request failed after retries',
     0,
@@ -135,6 +144,7 @@ export async function rest<T = unknown>(
 ): Promise<{ data: T; rateLimit: RateLimit }> {
   const token = getToken()
   const method = opts.method ?? 'GET'
+  let lastError: Error | null = null
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     let res: Response
@@ -153,6 +163,7 @@ export async function rest<T = unknown>(
     } catch (e) {
       if (opts.signal?.aborted) throw e
       if (attempt === MAX_RETRIES - 1) throw e
+      lastError = e as Error
       await sleep(2 ** attempt * 500)
       continue
     }
@@ -162,12 +173,20 @@ export async function rest<T = unknown>(
     if (res.status === 401) throw new GitHubError('Token invalid', 401)
 
     if (res.status === 403 || res.status === 429) {
+      lastError = new GitHubError(
+        `HTTP ${res.status} ${res.statusText}`,
+        res.status,
+      )
       const retryAfter = res.headers.get('retry-after')
       await sleep(retryAfter ? Number(retryAfter) * 1000 : 2 ** attempt * 1000)
       continue
     }
 
     if (res.status >= 500) {
+      lastError = new GitHubError(
+        `HTTP ${res.status} ${res.statusText}`,
+        res.status,
+      )
       await sleep(2 ** attempt * 500)
       continue
     }
@@ -183,5 +202,9 @@ export async function rest<T = unknown>(
     return { data, rateLimit }
   }
 
-  throw new GitHubError('REST request failed after retries', 0)
+  if (lastError instanceof GitHubError) throw lastError
+  throw new GitHubError(
+    lastError?.message ?? 'REST request failed after retries',
+    0,
+  )
 }
