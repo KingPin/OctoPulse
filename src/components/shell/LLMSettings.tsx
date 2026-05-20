@@ -1,7 +1,12 @@
-import { useState } from 'react'
-import { Loader2, Plug } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { AlertTriangle, Loader2, Plug } from 'lucide-react'
 import { useLLM } from '@/hooks/useLLM'
-import { createProvider, PROVIDER_META, type LLMProviderId } from '@/lib/llm'
+import {
+  checkBaseUrl,
+  createProvider,
+  PROVIDER_META,
+  type LLMProviderId,
+} from '@/lib/llm'
 import { toast } from '@/hooks/useToast'
 
 const PROVIDER_ORDER: LLMProviderId[] = [
@@ -18,7 +23,13 @@ export function LLMSettings() {
   const [testing, setTesting] = useState(false)
   const [dirty, setDirty] = useState(false)
 
+  const baseUrlCheck = useMemo(() => checkBaseUrl(config.baseUrl), [config.baseUrl])
+
   const onSave = () => {
+    if (!baseUrlCheck.ok) {
+      toast(baseUrlCheck.reason ?? 'Invalid base URL', 'error', 6000)
+      return
+    }
     save()
     setDirty(false)
     toast('LLM settings saved', 'success', 2000)
@@ -103,6 +114,17 @@ export function LLMSettings() {
             onChange={(e) => onChange('baseUrl', e.target.value)}
             className="w-full min-h-[36px] px-2 text-sm font-mono bg-[var(--color-canvas-subtle)] border border-[var(--color-border)] rounded-md"
           />
+          {baseUrlCheck.ok ? (
+            <span className="mt-1 block text-[10px] text-[var(--color-fg-subtle)]">
+              Your API key will be sent to{' '}
+              <span className="font-mono">{baseUrlCheck.host}</span>.
+            </span>
+          ) : (
+            <span className="mt-1 flex items-start gap-1 text-[10px] text-[var(--color-danger)]">
+              <AlertTriangle className="w-3 h-3 shrink-0 mt-px" aria-hidden />
+              <span>{baseUrlCheck.reason}</span>
+            </span>
+          )}
         </label>
       )}
 

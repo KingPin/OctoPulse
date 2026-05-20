@@ -24,3 +24,34 @@ export function defaultConfig(providerId: LLMProviderId): LLMConfig {
 export function isConfigured(config: LLMConfig | null): config is LLMConfig {
   return !!config && config.apiKey.trim().length > 0
 }
+
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1'])
+
+export interface BaseUrlCheck {
+  ok: boolean
+  host: string | null
+  reason?: string
+}
+
+export function checkBaseUrl(raw: string): BaseUrlCheck {
+  const trimmed = raw.trim()
+  if (!trimmed) return { ok: false, host: null, reason: 'Base URL is required' }
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    return { ok: false, host: null, reason: 'Not a valid URL' }
+  }
+  const isLocal = LOCAL_HOSTS.has(url.hostname)
+  if (url.protocol !== 'https:' && !isLocal) {
+    return {
+      ok: false,
+      host: url.host,
+      reason: 'Use https:// (or a localhost URL) — your API key would be sent in cleartext otherwise',
+    }
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    return { ok: false, host: url.host, reason: `Unsupported protocol ${url.protocol}` }
+  }
+  return { ok: true, host: url.host }
+}
