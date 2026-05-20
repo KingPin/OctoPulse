@@ -9,6 +9,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { useTheme, type Theme } from '@/hooks/useTheme'
+import { LLMSettings } from './LLMSettings'
 import type { TrackedRepo } from '@/hooks/useRepos'
 
 interface Props {
@@ -157,14 +158,11 @@ export function SettingsPanel({
           </Section>
 
           <Section icon={Sparkles} title="LLM provider">
-            <p className="text-xs text-[var(--color-fg-muted)]">
-              Configure your AI provider (OpenAI, Groq, OpenRouter, Gemini, or
-              any OpenAI-compatible endpoint) to unlock thread summarization and
+            <p className="text-xs text-[var(--color-fg-muted)] mb-3">
+              Configure your AI provider to unlock thread summarization and
               issue tone classification.
             </p>
-            <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--color-fg-subtle)]">
-              Coming in step 13
-            </p>
+            <LLMSettings />
           </Section>
 
           <Section icon={LogOut} title="Account">
