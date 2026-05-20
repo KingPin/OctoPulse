@@ -3,6 +3,9 @@ import type { CheckState, RepoSnapshot } from '@/types/github'
 export type Health = 'green' | 'amber' | 'red'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+// Per-repo aggregate thresholds: a repo turns amber/red as soon as *any*
+// thread crosses them. Tighter than StaleWatch's 7/14 (see stale/staleness.ts)
+// because the per-repo grid should flag drift earlier than the per-thread feed.
 const STALE_AMBER_DAYS = 3
 const STALE_RED_DAYS = 7
 
