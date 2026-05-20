@@ -6,6 +6,7 @@ import { ConfirmModal } from '@/components/shell/ConfirmModal'
 import { SummarizerModal } from '@/components/llm/SummarizerModal'
 import { closeIssue, mergePullRequest } from '@/lib/github/mutations'
 import { useLLM } from '@/hooks/useLLM'
+import { useClassifications } from '@/hooks/useClassifications'
 import { toast } from '@/hooks/useToast'
 import type { RepoSnapshot } from '@/types/github'
 
@@ -36,6 +37,7 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
   const [busyId, setBusyId] = useState<string | null>(null)
   const { isReady: llmReady } = useLLM()
   const canSummarize = isDemo || llmReady
+  const classifications = useClassifications({ items, isDemo })
 
   const runAction = async () => {
     if (!target) return
@@ -96,6 +98,7 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
               onAct={() => setTarget(item)}
               canSummarize={canSummarize}
               onSummarize={() => setSummarizeTarget(item)}
+              classification={classifications.get(item.id)}
             />
           )
         })}

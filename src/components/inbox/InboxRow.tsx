@@ -9,6 +9,8 @@ import {
   X,
 } from 'lucide-react'
 import { CATEGORY_META, type InboxItem } from './categorize'
+import { ToneChip } from '@/components/llm/ToneChip'
+import type { ClassificationState } from '@/hooks/useClassifications'
 
 interface Props {
   item: InboxItem
@@ -17,6 +19,7 @@ interface Props {
   onAct: () => void
   canSummarize: boolean
   onSummarize: () => void
+  classification: ClassificationState | undefined
 }
 
 const TONE_CLASS: Record<
@@ -48,6 +51,7 @@ export function InboxRow({
   onAct,
   canSummarize,
   onSummarize,
+  classification,
 }: Props) {
   const meta = CATEGORY_META[item.category]
   const Icon = item.isPullRequest ? GitPullRequest : MessageSquare
@@ -76,6 +80,9 @@ export function InboxRow({
         <span className="font-mono text-xs text-[var(--color-fg-muted)] shrink-0">
           {item.repoNameWithOwner}#{item.number}
         </span>
+        {classification && classification !== 'loading' && (
+          <ToneChip intent={classification} />
+        )}
         <span className="truncate text-sm">{item.title}</span>
         <ExternalLink
           className="w-3 h-3 text-[var(--color-fg-subtle)] opacity-0 group-hover:opacity-100 shrink-0"
