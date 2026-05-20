@@ -5,6 +5,8 @@ import { useDashboardData } from '@/hooks/useDashboardData'
 import { ActionInbox } from '@/components/inbox/ActionInbox'
 import { categorize } from '@/components/inbox/categorize'
 import { RepoPulseGrid } from '@/components/pulse/RepoPulseGrid'
+import { StaleWatch } from '@/components/stale/StaleWatch'
+import { staleWatch } from '@/components/stale/staleness'
 import type { TrackedRepo } from '@/hooks/useRepos'
 import type { Viewer } from '@/lib/github/types'
 
@@ -50,6 +52,10 @@ export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
   const inboxCount = useMemo(
     () => categorize(state.snapshots, viewer.login).length,
     [state.snapshots, viewer.login],
+  )
+  const staleCount = useMemo(
+    () => staleWatch(state.snapshots).length,
+    [state.snapshots],
   )
 
   return (
@@ -110,11 +116,10 @@ export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
               <SectionHeader
                 icon={Hourglass}
                 title="Stale Watch"
-                caption="Quiet issues & PRs"
+                count={staleCount}
+                caption="Open ≥7d without movement"
               />
-              <div className="p-6 text-sm text-[var(--color-fg-muted)] border border-dashed border-[var(--color-border)] rounded-md text-center">
-                Stale watch coming in step 10.
-              </div>
+              <StaleWatch snapshots={state.snapshots} />
             </section>
           </>
         )}
