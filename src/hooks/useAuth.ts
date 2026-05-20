@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as storage from '@/lib/storage'
 import { validateToken } from '@/lib/github/pat'
 import type { Viewer } from '@/lib/github/types'
@@ -19,6 +19,7 @@ export function useAuth(): {
   signOut: () => void
 } {
   const [state, setState] = useState<AuthState>({ status: 'loading' })
+  const generationRef = useRef(0)
 
   useEffect(() => {
     const stored = storage.get<StoredAuth>('githubToken')
@@ -26,13 +27,14 @@ export function useAuth(): {
       setState({ status: 'signed-out' })
       return
     }
-    // Re-validate the stored token in the background; sign in optimistically.
+    const gen = generationRef.current
     setState({
       status: 'signed-in',
       token: stored.token,
       viewer: stored.viewer,
     })
     validateToken(stored.token).then((r) => {
+      if (generationRef.current !== gen) return
       if (!r.ok && r.reason === 'unauthorized') {
         storage.remove('githubToken')
         setState({ status: 'signed-out' })
@@ -41,11 +43,13 @@ export function useAuth(): {
   }, [])
 
   const signIn = useCallback((token: string, viewer: Viewer) => {
+    generationRef.current += 1
     storage.set<StoredAuth>('githubToken', { token, viewer })
     setState({ status: 'signed-in', token, viewer })
   }, [])
 
   const signOut = useCallback(() => {
+    generationRef.current += 1
     storage.clear()
     setState({ status: 'signed-out' })
   }, [])
