@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { Activity, Loader2, LogOut, Sun, Moon, MonitorSmartphone } from 'lucide-react'
 import { useTheme, type Theme } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
 import { ToastViewport } from '@/components/shell/Toast'
 import { PatEntryScreen } from '@/components/onboarding/PatEntryScreen'
+import { DEMO_VIEWER } from '@/lib/demo'
+import type { Viewer } from '@/lib/github/types'
 
 function ThemeToggle() {
   const [theme, setTheme] = useTheme()
@@ -43,6 +46,7 @@ function ThemeToggle() {
 
 function App() {
   const { state, signIn, signOut } = useAuth()
+  const [demo, setDemo] = useState(false)
 
   if (state.status === 'loading') {
     return (
@@ -55,13 +59,28 @@ function App() {
     )
   }
 
-  if (state.status === 'signed-out') {
+  if (state.status === 'signed-out' && !demo) {
     return (
       <>
-        <PatEntryScreen onSignedIn={signIn} />
+        <PatEntryScreen
+          onSignedIn={signIn}
+          onTryDemo={() => setDemo(true)}
+        />
         <ToastViewport />
       </>
     )
+  }
+
+  const isDemo = demo && state.status === 'signed-out'
+  const viewer: Viewer =
+    state.status === 'signed-in' ? state.viewer : DEMO_VIEWER
+
+  const handleExit = () => {
+    if (isDemo) {
+      setDemo(false)
+    } else {
+      signOut()
+    }
   }
 
   return (
@@ -74,27 +93,32 @@ function App() {
               aria-hidden
             />
             <span className="text-sm font-semibold">OctoPulse</span>
+            {isDemo && (
+              <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-[var(--color-attention-bg)] text-[var(--color-attention)] border border-[var(--color-attention-border)]">
+                Demo
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="flex items-center gap-2 text-sm">
               <img
-                src={state.viewer.avatarUrl}
+                src={viewer.avatarUrl}
                 alt=""
                 className="w-6 h-6 rounded-full"
               />
               <span className="text-[var(--color-fg-muted)]">
-                @{state.viewer.login}
+                @{viewer.login}
               </span>
             </div>
             <button
               type="button"
-              onClick={signOut}
+              onClick={handleExit}
               className="min-w-[44px] min-h-[36px] flex items-center gap-1 px-2 text-xs text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)] border border-[var(--color-border)] rounded-md"
-              aria-label="Sign out"
+              aria-label={isDemo ? 'Exit demo' : 'Sign out'}
             >
               <LogOut className="w-3.5 h-3.5" aria-hidden />
-              <span>Sign out</span>
+              <span>{isDemo ? 'Exit demo' : 'Sign out'}</span>
             </button>
           </div>
         </header>
