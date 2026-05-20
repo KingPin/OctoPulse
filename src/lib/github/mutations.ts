@@ -16,7 +16,7 @@ export async function mergePullRequest(
   signal?: AbortSignal,
 ): Promise<MergeResponse> {
   const r = await rest<MergeResponse>(
-    `/repos/${owner}/${name}/pulls/${number}/merge`,
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls/${number}/merge`,
     {
       method: 'PUT',
       body: { merge_method: method },
@@ -32,9 +32,12 @@ export async function closeIssue(
   number: number,
   signal?: AbortSignal,
 ): Promise<void> {
-  await rest<unknown>(`/repos/${owner}/${name}/issues/${number}`, {
-    method: 'PATCH',
-    body: { state: 'closed' },
-    signal,
-  })
+  await rest<unknown>(
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/issues/${number}`,
+    {
+      method: 'PATCH',
+      body: { state: 'closed' },
+      signal,
+    },
+  )
 }
