@@ -1,19 +1,70 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Inbox } from 'lucide-react'
-import { categorize } from './categorize'
+import { categorize, type InboxItem } from './categorize'
 import { InboxRow } from './InboxRow'
+import { ConfirmModal } from '@/components/shell/ConfirmModal'
+import { closeIssue, mergePullRequest } from '@/lib/github/mutations'
+import { toast } from '@/hooks/useToast'
 import type { RepoSnapshot } from '@/types/github'
 
 interface Props {
   snapshots: RepoSnapshot[]
   viewerLogin: string
+  isDemo: boolean
+  onMutated: () => void
 }
 
-export function ActionInbox({ snapshots, viewerLogin }: Props) {
+function parseRepo(nameWithOwner: string): { owner: string; name: string } | null {
+  const idx = nameWithOwner.indexOf('/')
+  if (idx < 1 || idx === nameWithOwner.length - 1) return null
+  return {
+    owner: nameWithOwner.slice(0, idx),
+    name: nameWithOwner.slice(idx + 1),
+  }
+}
+
+export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props) {
   const items = useMemo(
     () => categorize(snapshots, viewerLogin),
     [snapshots, viewerLogin],
   )
+
+  const [target, setTarget] = useState<InboxItem | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const runAction = async () => {
+    if (!target) return
+    const parsed = parseRepo(target.repoNameWithOwner)
+    if (!parsed) {
+      toast('Could not parse repo', 'error')
+      return
+    }
+    const id = target.id
+
+    if (isDemo) {
+      setTarget(null)
+      toast('Demo mode — no real API call made', 'info')
+      return
+    }
+
+    setBusyId(id)
+    try {
+      if (target.isPullRequest) {
+        await mergePullRequest(parsed.owner, parsed.name, target.number)
+        toast(`Merged ${target.repoNameWithOwner}#${target.number}`, 'success')
+      } else {
+        await closeIssue(parsed.owner, parsed.name, target.number)
+        toast(`Closed ${target.repoNameWithOwner}#${target.number}`, 'success')
+      }
+      setTarget(null)
+      onMutated()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Action failed'
+      toast(msg, 'error')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   if (items.length === 0) {
     return (
@@ -25,10 +76,44 @@ export function ActionInbox({ snapshots, viewerLogin }: Props) {
   }
 
   return (
-    <div className="border border-[var(--color-border)] rounded-md overflow-hidden">
-      {items.map((item) => (
-        <InboxRow key={item.id} item={item} />
-      ))}
-    </div>
+    <>
+      <div className="border border-[var(--color-border)] rounded-md overflow-hidden">
+        {items.map((item) => {
+          const canAct =
+            (item.isPullRequest && item.category !== 'blocked') ||
+            !item.isPullRequest
+          return (
+            <InboxRow
+              key={item.id}
+              item={item}
+              canAct={canAct}
+              isBusy={busyId === item.id}
+              onAct={() => setTarget(item)}
+            />
+          )
+        })}
+      </div>
+
+      <ConfirmModal
+        open={target !== null}
+        title={
+          target?.isPullRequest
+            ? `Merge ${target.repoNameWithOwner}#${target.number}?`
+            : target
+              ? `Close ${target.repoNameWithOwner}#${target.number}?`
+              : ''
+        }
+        description={
+          target?.isPullRequest
+            ? `This merges the PR using the default merge method. Make sure checks have passed.`
+            : `This closes the issue without leaving a comment. You can reopen it on GitHub.`
+        }
+        confirmLabel={target?.isPullRequest ? 'Merge' : 'Close issue'}
+        variant={target?.isPullRequest ? 'default' : 'danger'}
+        busy={busyId !== null}
+        onConfirm={runAction}
+        onCancel={() => setTarget(null)}
+      />
+    </>
   )
 }

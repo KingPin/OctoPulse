@@ -1,8 +1,19 @@
-import { ExternalLink, GitPullRequest, MessageSquare } from 'lucide-react'
+import {
+  Check,
+  ExternalLink,
+  GitMerge,
+  GitPullRequest,
+  Loader2,
+  MessageSquare,
+  X,
+} from 'lucide-react'
 import { CATEGORY_META, type InboxItem } from './categorize'
 
 interface Props {
   item: InboxItem
+  canAct: boolean
+  isBusy: boolean
+  onAct: () => void
 }
 
 const TONE_CLASS: Record<
@@ -27,17 +38,14 @@ function formatAge(days: number): string {
   return `${Math.floor(days / 365)}y`
 }
 
-export function InboxRow({ item }: Props) {
+export function InboxRow({ item, canAct, isBusy, onAct }: Props) {
   const meta = CATEGORY_META[item.category]
   const Icon = item.isPullRequest ? GitPullRequest : MessageSquare
+  const ActionIcon = item.isPullRequest ? GitMerge : X
+  const actionLabel = item.isPullRequest ? 'Merge' : 'Close'
 
   return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-3 px-3 py-2 border-t border-[var(--color-border-muted)] first:border-t-0 hover:bg-[var(--color-canvas-subtle)]"
-    >
+    <div className="group flex items-center gap-3 px-3 py-2 border-t border-[var(--color-border-muted)] first:border-t-0 hover:bg-[var(--color-canvas-subtle)]">
       <span
         className={`shrink-0 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${TONE_CLASS[meta.tone]}`}
       >
@@ -49,21 +57,44 @@ export function InboxRow({ item }: Props) {
         aria-hidden
       />
 
-      <div className="flex-1 min-w-0 flex items-baseline gap-2">
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 min-w-0 flex items-baseline gap-2 hover:underline"
+      >
         <span className="font-mono text-xs text-[var(--color-fg-muted)] shrink-0">
           {item.repoNameWithOwner}#{item.number}
         </span>
         <span className="truncate text-sm">{item.title}</span>
-      </div>
+        <ExternalLink
+          className="w-3 h-3 text-[var(--color-fg-subtle)] opacity-0 group-hover:opacity-100 shrink-0"
+          aria-hidden
+        />
+      </a>
 
       <span className="text-xs text-[var(--color-fg-subtle)] shrink-0">
         {formatAge(item.ageDays)}
       </span>
 
-      <ExternalLink
-        className="w-3.5 h-3.5 text-[var(--color-fg-subtle)] opacity-0 group-hover:opacity-100 shrink-0"
-        aria-hidden
-      />
-    </a>
+      {canAct && (
+        <button
+          type="button"
+          onClick={onAct}
+          disabled={isBusy}
+          aria-label={`${actionLabel} ${item.repoNameWithOwner}#${item.number}`}
+          className="shrink-0 min-h-[28px] inline-flex items-center gap-1 px-2 text-xs border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)] hover:border-[var(--color-accent)] disabled:opacity-50"
+        >
+          {isBusy ? (
+            <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+          ) : item.isPullRequest ? (
+            <ActionIcon className="w-3 h-3" aria-hidden />
+          ) : (
+            <Check className="w-3 h-3" aria-hidden />
+          )}
+          {actionLabel}
+        </button>
+      )}
+    </div>
   )
 }

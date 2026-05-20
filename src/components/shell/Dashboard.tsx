@@ -107,6 +107,8 @@ export function Dashboard({
               <ActionInbox
                 snapshots={state.snapshots}
                 viewerLogin={viewer.login}
+                isDemo={isDemo}
+                onMutated={refresh}
               />
             </section>
 
