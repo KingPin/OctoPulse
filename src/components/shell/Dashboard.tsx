@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Inbox, GitBranch, Hourglass, Loader2 } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { useDashboardData } from '@/hooks/useDashboardData'
+import { ActionInbox } from '@/components/inbox/ActionInbox'
+import { categorize } from '@/components/inbox/categorize'
 import type { TrackedRepo } from '@/hooks/useRepos'
 import type { Viewer } from '@/lib/github/types'
 
@@ -44,6 +46,10 @@ function SectionHeader({ icon: Icon, title, count, caption }: SectionHeaderProps
 export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
   const { state, refresh } = useDashboardData({ trackedRepos, isDemo })
   const [, setSettingsOpen] = useState(false)
+  const inboxCount = useMemo(
+    () => categorize(state.snapshots, viewer.login).length,
+    [state.snapshots, viewer.login],
+  )
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -80,11 +86,13 @@ export function Dashboard({ viewer, isDemo, trackedRepos, onSignOut }: Props) {
               <SectionHeader
                 icon={Inbox}
                 title="Action Required"
+                count={inboxCount}
                 caption="Items that need your attention"
               />
-              <div className="p-6 text-sm text-[var(--color-fg-muted)] border border-dashed border-[var(--color-border)] rounded-md text-center">
-                Inbox coming in step 8.
-              </div>
+              <ActionInbox
+                snapshots={state.snapshots}
+                viewerLogin={viewer.login}
+              />
             </section>
 
             <section aria-label="Repository pulse">
