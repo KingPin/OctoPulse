@@ -47,6 +47,7 @@ export function useDashboardData({
   }))
 
   const inFlight = useRef<AbortController | null>(null)
+  const lastUpdatedAtRef = useRef<number | null>(state.lastUpdatedAt)
 
   const runFetch = useCallback(async () => {
     if (isDemo) {
@@ -104,6 +105,7 @@ export function useDashboardData({
 
       const now = Date.now()
       storage.set<number>('lastFetchAt', now)
+      lastUpdatedAtRef.current = now
       const errorMsg =
         failures.length === 0
           ? null
@@ -139,14 +141,14 @@ export function useDashboardData({
   useEffect(() => {
     if (isDemo) return
     const onFocus = () => {
-      const last = state.lastUpdatedAt
+      const last = lastUpdatedAtRef.current
       if (!last || Date.now() - last > FOCUS_REFETCH_MS) {
         runFetch()
       }
     }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
-  }, [runFetch, state.lastUpdatedAt, isDemo])
+  }, [runFetch, isDemo])
 
   return { state, refresh: runFetch }
 }
