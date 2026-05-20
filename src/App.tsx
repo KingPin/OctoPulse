@@ -4,7 +4,9 @@ import { useTheme, type Theme } from '@/hooks/useTheme'
 import { useAuth } from '@/hooks/useAuth'
 import { ToastViewport } from '@/components/shell/Toast'
 import { PatEntryScreen } from '@/components/onboarding/PatEntryScreen'
-import { DEMO_VIEWER } from '@/lib/demo'
+import { RepoPicker } from '@/components/onboarding/RepoPicker'
+import { useTrackedRepos } from '@/hooks/useRepos'
+import { DEMO_VIEWER, DEMO_REPOS } from '@/lib/demo'
 import type { Viewer } from '@/lib/github/types'
 
 function ThemeToggle() {
@@ -46,9 +48,10 @@ function ThemeToggle() {
 
 function App() {
   const { state, signIn, signOut } = useAuth()
+  const repos = useTrackedRepos()
   const [demo, setDemo] = useState(false)
 
-  if (state.status === 'loading') {
+  if (state.status === 'loading' || repos.state.status === 'loading') {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <Loader2
@@ -72,16 +75,41 @@ function App() {
   }
 
   const isDemo = demo && state.status === 'signed-out'
-  const viewer: Viewer =
-    state.status === 'signed-in' ? state.viewer : DEMO_VIEWER
 
   const handleExit = () => {
     if (isDemo) {
       setDemo(false)
     } else {
+      repos.reset()
       signOut()
     }
   }
+
+  if (state.status === 'signed-in' && repos.state.status === 'unconfigured') {
+    return (
+      <>
+        <RepoPicker onContinue={repos.save} onSignOut={handleExit} />
+        <ToastViewport />
+      </>
+    )
+  }
+
+  const viewer: Viewer =
+    state.status === 'signed-in' ? state.viewer : DEMO_VIEWER
+  const trackedRepos =
+    isDemo
+      ? DEMO_REPOS.map((r) => ({
+          id: r.id,
+          nameWithOwner: r.nameWithOwner,
+          description: r.description,
+          isPrivate: r.isPrivate,
+          isFork: r.isFork,
+          isArchived: r.isArchived,
+          pushedAt: r.pushedAt,
+        }))
+      : repos.state.status === 'configured'
+        ? repos.state.repos
+        : []
 
   return (
     <>
@@ -124,7 +152,9 @@ function App() {
         </header>
 
         <section className="flex-1 flex items-center justify-center p-8 text-[var(--color-fg-muted)] text-sm">
-          Dashboard surfaces will appear here. (Steps 4–10.)
+          Tracking {trackedRepos.length}{' '}
+          {trackedRepos.length === 1 ? 'repo' : 'repos'}. Dashboard surfaces
+          appear here. (Steps 7–10.)
         </section>
       </main>
 
