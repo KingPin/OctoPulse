@@ -93,7 +93,7 @@ export function useClassifications({
 
         try {
           const { data } = await rest<IssueBodyResponse>(
-            `/repos/${parsed.owner}/${parsed.name}/issues/${t.number}`,
+            `/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.name)}/issues/${t.number}`,
             { signal: ac.signal },
           )
           if (ac.signal.aborted) return

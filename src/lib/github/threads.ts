@@ -29,7 +29,7 @@ export async function fetchThread(
   number: number,
   signal?: AbortSignal,
 ): Promise<ThreadMessage[]> {
-  const issuePath = `/repos/${owner}/${name}/issues/${number}`
+  const issuePath = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/issues/${number}`
   const commentsPath = `${issuePath}/comments?per_page=100`
 
   const [issue, comments] = await Promise.all([
