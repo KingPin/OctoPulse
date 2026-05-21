@@ -42,6 +42,9 @@ export function checkBaseUrl(raw: string): BaseUrlCheck {
   } catch {
     return { ok: false, host: null, reason: 'Not a valid URL' }
   }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    return { ok: false, host: url.host, reason: `Unsupported protocol ${url.protocol}` }
+  }
   const isLocal = LOCAL_HOSTS.has(url.hostname)
   if (url.protocol !== 'https:' && !isLocal) {
     return {
@@ -49,9 +52,6 @@ export function checkBaseUrl(raw: string): BaseUrlCheck {
       host: url.host,
       reason: 'Use https:// (or a localhost URL) — your API key would be sent in cleartext otherwise',
     }
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-    return { ok: false, host: url.host, reason: `Unsupported protocol ${url.protocol}` }
   }
   return { ok: true, host: url.host }
 }
