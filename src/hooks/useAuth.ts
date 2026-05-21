@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import * as storage from '@/lib/storage'
 import { validateToken } from '@/lib/github/pat'
 import type { Viewer } from '@/lib/github/types'
+import { toast } from './useToast'
 
 export type AuthState =
   | { status: 'loading' }
@@ -51,7 +52,14 @@ export function useAuth(): {
 
   const signIn = useCallback((token: string, viewer: Viewer) => {
     generationRef.current += 1
-    storage.set<StoredAuth>('githubToken', { token, viewer })
+    const persisted = storage.set<StoredAuth>('githubToken', { token, viewer })
+    if (!persisted) {
+      toast(
+        'Signed in, but your token could not be saved — you will need to paste it again on reload.',
+        'warning',
+        8000,
+      )
+    }
     setState({ status: 'signed-in', token, viewer })
   }, [])
 
