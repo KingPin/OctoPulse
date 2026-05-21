@@ -84,7 +84,8 @@ export function useClassifications({
 
     ;(async () => {
       let llmAuthBailed = false
-      for (const t of targets) {
+      for (let idx = 0; idx < targets.length; idx++) {
+        const t = targets[idx]!
         if (ac.signal.aborted) return
         if (cacheRef.current.has(t.id)) continue
 
@@ -118,14 +119,17 @@ export function useClassifications({
 
           console.error('octopulse: classification failed', t.id, e)
 
-          setResults((prev) => {
-            const next = new Map(prev)
-            next.set(t.id, null)
-            return next
-          })
-
           if (isLLMAuthError && !llmAuthBailed) {
             llmAuthBailed = true
+            // Mark every remaining target (including this one) as null so the
+            // inbox stops spinning instead of sitting in 'loading'.
+            setResults((prev) => {
+              const next = new Map(prev)
+              for (let j = idx; j < targets.length; j++) {
+                next.set(targets[j]!.id, null)
+              }
+              return next
+            })
             toast(
               'LLM classification disabled — check API key in Settings.',
               'error',
@@ -133,6 +137,12 @@ export function useClassifications({
             )
             return
           }
+
+          setResults((prev) => {
+            const next = new Map(prev)
+            next.set(t.id, null)
+            return next
+          })
         }
       }
     })()
