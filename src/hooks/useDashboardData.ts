@@ -51,6 +51,8 @@ export function useDashboardData({
 
   const runFetch = useCallback(async () => {
     if (isDemo) {
+      inFlight.current?.abort()
+      inFlight.current = null
       setState((s) => ({
         ...s,
         snapshots: DEMO_REPOS,
@@ -59,7 +61,12 @@ export function useDashboardData({
       }))
       return
     }
-    if (trackedRepos.length === 0) return
+    if (trackedRepos.length === 0) {
+      inFlight.current?.abort()
+      inFlight.current = null
+      setState((s) => ({ ...s, snapshots: [], isFetching: false, error: null }))
+      return
+    }
 
     inFlight.current?.abort()
     const ac = new AbortController()
@@ -67,18 +74,25 @@ export function useDashboardData({
 
     setState((s) => ({ ...s, isFetching: true, error: null }))
 
+    type FetchOutcome =
+      | { ok: true; nameWithOwner: string; result: { data: RepoQueryResponse; rateLimit: RateLimit } }
+      | { ok: false; nameWithOwner: string; reason: string }
+
     try {
-      const settled = await Promise.allSettled(
-        trackedRepos.map(async (repo) => {
+      const outcomes: FetchOutcome[] = await Promise.all(
+        trackedRepos.map(async (repo): Promise<FetchOutcome> => {
           const parsed = splitOwnerRepo(repo.nameWithOwner)
-          if (!parsed) throw new Error(`Invalid repo path: ${repo.nameWithOwner}`)
-          const r: { data: RepoQueryResponse; rateLimit: RateLimit } =
-            await graphql<RepoQueryResponse>(
-              REPO_QUERY,
-              parsed,
-              ac.signal,
-            )
-          return { repo, result: r }
+          if (!parsed) {
+            return { ok: false, nameWithOwner: repo.nameWithOwner, reason: 'Invalid repo path' }
+          }
+          try {
+            const result = await graphql<RepoQueryResponse>(REPO_QUERY, parsed, ac.signal)
+            return { ok: true, nameWithOwner: repo.nameWithOwner, result }
+          } catch (e) {
+            if (ac.signal.aborted) throw e
+            const reason = e instanceof Error ? e.message : String(e)
+            return { ok: false, nameWithOwner: repo.nameWithOwner, reason }
+          }
         }),
       )
 
@@ -87,21 +101,16 @@ export function useDashboardData({
       const snapshots: RepoSnapshot[] = []
       const failures: Array<{ nameWithOwner: string; reason: string }> = []
       let remaining: number | null = null
-      settled.forEach((outcome, i) => {
-        const repo = trackedRepos[i]
-        if (!repo) return
-        if (outcome.status === 'fulfilled') {
-          const { result } = outcome.value
-          if (result.data.repository) snapshots.push(result.data.repository)
-          if (result.rateLimit.remaining !== null) remaining = result.rateLimit.remaining
+      for (const outcome of outcomes) {
+        if (outcome.ok) {
+          if (outcome.result.data.repository) snapshots.push(outcome.result.data.repository)
+          if (outcome.result.rateLimit.remaining !== null) {
+            remaining = outcome.result.rateLimit.remaining
+          }
         } else {
-          const reason =
-            outcome.reason instanceof Error
-              ? outcome.reason.message
-              : String(outcome.reason)
-          failures.push({ nameWithOwner: repo.nameWithOwner, reason })
+          failures.push({ nameWithOwner: outcome.nameWithOwner, reason: outcome.reason })
         }
-      })
+      }
 
       const now = Date.now()
       storage.set<number>('lastFetchAt', now)
