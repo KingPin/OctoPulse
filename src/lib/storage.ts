@@ -12,7 +12,7 @@ export function get<T>(key: StorageKey): T | null {
     const raw = localStorage.getItem(PREFIX + key)
     return raw ? (JSON.parse(raw) as T) : null
   } catch (e) {
-    console.error(`octopulse: failed to parse ${key}`, e)
+    console.error(`octopulse: failed to read ${key} (localStorage blocked or value corrupted)`, e)
     return null
   }
 }
