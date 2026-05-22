@@ -75,12 +75,10 @@ Click **Test** after pasting your key. Defaults rot fast — feel free to overri
 
 Production builds are pure static files in `dist/`. Any static host works.
 
-**GitHub Pages**
-```bash
-npm run build
-# Push dist/ to gh-pages branch, or use the official Pages action.
-```
-Set your repo's Pages source to the `gh-pages` branch (or to GitHub Actions if using the action).
+**GitHub Pages** (how this repo is deployed)
+- Repo Settings → Pages → Source: **GitHub Actions**.
+- Every push to `main` runs `.github/workflows/deploy.yml`, which builds with Node 22 and publishes `dist/`.
+- For a custom domain, edit `public/CNAME` and point a DNS CNAME at `<user>.github.io`. For a project page without a custom domain (e.g. `<user>.github.io/<repo>/`), delete `public/CNAME` and set `base: '/<repo>/'` in `vite.config.ts`.
 
 **Cloudflare Pages**
 - Build command: `npm run build`
