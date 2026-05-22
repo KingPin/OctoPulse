@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import * as storage from '@/lib/storage'
 
 export type Theme = 'dark' | 'light' | 'auto'
@@ -15,10 +15,32 @@ function applyTheme(theme: Theme): void {
   root.classList.toggle('light', resolved === 'light')
 }
 
+// Module-scoped store so every useTheme() consumer shares one source of truth.
+// Without this, each component held independent useState and would drift after
+// any setter call.
+let current: Theme = storage.get<Theme>('theme') ?? 'auto'
+const listeners = new Set<() => void>()
+
+function subscribe(cb: () => void): () => void {
+  listeners.add(cb)
+  return () => {
+    listeners.delete(cb)
+  }
+}
+
+function getSnapshot(): Theme {
+  return current
+}
+
+function setTheme(t: Theme): void {
+  if (t === current) return
+  current = t
+  storage.set('theme', t)
+  listeners.forEach((cb) => cb())
+}
+
 export function useTheme(): readonly [Theme, (t: Theme) => void] {
-  const [theme, setThemeState] = useState<Theme>(
-    () => storage.get<Theme>('theme') ?? 'auto',
-  )
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
   useEffect(() => {
     applyTheme(theme)
@@ -31,11 +53,6 @@ export function useTheme(): readonly [Theme, (t: Theme) => void] {
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [theme])
-
-  const setTheme = useCallback((t: Theme) => {
-    storage.set('theme', t)
-    setThemeState(t)
-  }, [])
 
   return [theme, setTheme] as const
 }
