@@ -132,7 +132,11 @@ export function Dashboard({
                 count={staleCount}
                 caption="Open ≥7d without movement"
               />
-              <StaleWatch snapshots={state.snapshots} />
+              <StaleWatch
+                snapshots={state.snapshots}
+                isDemo={isDemo}
+                onMutated={refresh}
+              />
             </section>
           </>
         )}
