@@ -16,23 +16,51 @@ Everything runs in your browser. Your PAT and LLM key live in `localStorage` and
 
 ---
 
-## Quickstart
+## Get started
+
+Pick the path that fits you. All three give you the same app.
+
+### 1. Use the hosted version (zero setup)
+
+<https://octopulse.kpsn.dev>
+
+Open it, paste a PAT (or try demo mode), done. The whole app is static — the host serves bytes, never sees your token.
+
+### 2. Self-host with Docker (one command)
 
 ```bash
-git clone <this-repo> octopulse
-cd octopulse
+docker run -d --name octopulse -p 8080:80 ghcr.io/kingpin/octopulse:latest
+```
+
+Then open <http://localhost:8080>. Multi-arch image (amd64 + arm64), nginx-served, ~63 MB. Updates with `docker pull`.
+
+Prefer compose? Drop this in `docker-compose.yml`:
+
+```yaml
+services:
+  octopulse:
+    image: ghcr.io/kingpin/octopulse:latest
+    ports: ["8080:80"]
+    restart: unless-stopped
+```
+
+### 3. Self-host from source (static files)
+
+```bash
+git clone https://github.com/KingPin/OctoPulse.git
+cd OctoPulse
 npm install
-npm run dev
+npm run build        # outputs static dist/
 ```
 
-Open <http://localhost:5173>. Choose **Try demo mode** to test-drive without a token, or paste a GitHub PAT to load real data.
+Serve `dist/` from any static host. Common options:
 
-Production build:
+- **GitHub Pages** — Settings → Pages → Source: **GitHub Actions**. `.github/workflows/deploy.yml` ships with this repo and builds on every push to `main`. Custom domain: edit `public/CNAME`. Project page (no domain): delete `public/CNAME` and set `base: '/<repo>/'` in `vite.config.ts`.
+- **Cloudflare Pages** — build command `npm run build`, output `dist`, no env vars.
+- **Vercel** — framework preset **Vite**, output `dist`, no functions.
+- **Just on your laptop** — `cd dist && python3 -m http.server 8000`.
 
-```bash
-npm run build         # outputs static dist/
-npm run preview       # serve the build locally
-```
+For local dev with hot reload: `npm run dev` → <http://localhost:5173>.
 
 ---
 
@@ -71,39 +99,12 @@ Click **Test** after pasting your key. Defaults rot fast — feel free to overri
 
 ---
 
-## Deploy
-
-Production builds are pure static files in `dist/`. Any static host works.
-
-**GitHub Pages** (how this repo is deployed)
-- Repo Settings → Pages → Source: **GitHub Actions**.
-- Every push to `main` runs `.github/workflows/deploy.yml`, which builds with Node 22 and publishes `dist/`.
-- For a custom domain, edit `public/CNAME` and point a DNS CNAME at `<user>.github.io`. For a project page without a custom domain (e.g. `<user>.github.io/<repo>/`), delete `public/CNAME` and set `base: '/<repo>/'` in `vite.config.ts`.
-
-**Cloudflare Pages**
-- Build command: `npm run build`
-- Build output directory: `dist`
-- No env vars needed.
-
-**Vercel (static)**
-- Framework preset: **Vite**
-- Output directory: `dist`
-- No serverless functions needed.
-
-**Local file (no host)**
-```bash
-npm run build
-cd dist && python3 -m http.server 8000
-```
-Browse to <http://localhost:8000>. Useful when you'd rather not deploy at all.
-
----
-
 ## Privacy & security
 
 - Your PAT and LLM API key live in `localStorage` only. They never leave your browser except to the APIs they authenticate to (api.github.com, your configured LLM provider).
 - No telemetry, no analytics, no third-party scripts.
 - The whole app is a single static bundle; you can read the network tab and verify.
+- The hosted version at octopulse.kpsn.dev is the exact build from `main` — same bytes you'd get from `npm run build` or the Docker image.
 
 If you don't want OctoPulse to keep a token at all, use **demo mode**.
 
