@@ -11,16 +11,50 @@ export interface RateLimit {
   cost: number | null
 }
 
+export type GitHubErrorKind = 'forbidden' | 'rate-limit' | 'auth' | 'unknown'
+
 export class GitHubError extends Error {
   status: number
   body: unknown
+  kind: GitHubErrorKind
 
-  constructor(message: string, status: number, body?: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    body?: unknown,
+    kind: GitHubErrorKind = 'unknown',
+  ) {
     super(message)
     this.name = 'GitHubError'
     this.status = status
     this.body = body
+    this.kind = kind
   }
+}
+
+const PERMISSION_MESSAGE_RE =
+  /not accessible|repository was archived|requires? .* (scope|permission)|must have .* (permission|access|right)/i
+
+/**
+ * Read a 403/429 response body and decide whether it's a permission denial
+ * (throw immediately) or a rate limit (caller should retry).
+ * Returns the parsed body so the caller doesn't consume it again.
+ */
+async function classify403(
+  res: Response,
+): Promise<{ permission: boolean; body: string; message: string | null }> {
+  const text = await res.text()
+  let message: string | null = null
+  try {
+    const parsed = JSON.parse(text) as { message?: string }
+    message = typeof parsed.message === 'string' ? parsed.message : null
+  } catch {
+    // not JSON
+  }
+  if (message && PERMISSION_MESSAGE_RE.test(message)) {
+    return { permission: true, body: text, message }
+  }
+  return { permission: false, body: text, message }
 }
 
 function getToken(): string {
@@ -78,14 +112,24 @@ export async function graphql<T = unknown>(
     const rateLimit = parseRateLimit(res)
 
     if (res.status === 401) {
-      throw new GitHubError('Token invalid or expired', 401)
+      throw new GitHubError('Token invalid or expired', 401, undefined, 'auth')
     }
 
     if (res.status === 403 || res.status === 429) {
-      // Abuse / secondary rate limit. Honor Retry-After if present.
+      const { permission, body, message } = await classify403(res)
+      if (permission) {
+        throw new GitHubError(
+          message ?? 'Forbidden',
+          res.status,
+          body,
+          'forbidden',
+        )
+      }
       lastError = new GitHubError(
         `HTTP ${res.status} ${res.statusText}`,
         res.status,
+        body,
+        'rate-limit',
       )
       const retryAfter = res.headers.get('retry-after')
       const waitMs = retryAfter ? Number(retryAfter) * 1000 : 2 ** attempt * 1000
@@ -183,12 +227,24 @@ export async function rest<T = unknown>(
 
     const rateLimit = parseRateLimit(res)
 
-    if (res.status === 401) throw new GitHubError('Token invalid', 401)
+    if (res.status === 401)
+      throw new GitHubError('Token invalid', 401, undefined, 'auth')
 
     if (res.status === 403 || res.status === 429) {
+      const { permission, body, message } = await classify403(res)
+      if (permission) {
+        throw new GitHubError(
+          message ?? 'Forbidden',
+          res.status,
+          body,
+          'forbidden',
+        )
+      }
       lastError = new GitHubError(
         `HTTP ${res.status} ${res.statusText}`,
         res.status,
+        body,
+        'rate-limit',
       )
       const retryAfter = res.headers.get('retry-after')
       await sleep(retryAfter ? Number(retryAfter) * 1000 : 2 ** attempt * 1000)

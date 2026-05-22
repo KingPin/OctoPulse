@@ -7,8 +7,10 @@ import {
   Sparkles,
   LogOut,
   Pencil,
+  ShieldCheck,
 } from 'lucide-react'
 import { useTheme, type Theme } from '@/hooks/useTheme'
+import { usePatMode } from '@/hooks/usePatMode'
 import { LLMSettings } from './LLMSettings'
 import type { TrackedRepo } from '@/hooks/useRepos'
 
@@ -55,6 +57,8 @@ export function SettingsPanel({
   onSignOut,
 }: Props) {
   const [theme, setTheme] = useTheme()
+  const [patMode, setMode] = usePatMode()
+  const readOnly = patMode === 'readonly'
 
   useEffect(() => {
     if (!open) return
@@ -155,6 +159,36 @@ export function SettingsPanel({
                 </ul>
               </>
             )}
+          </Section>
+
+          <Section icon={ShieldCheck} title="Access">
+            <label className="flex items-start justify-between gap-3 cursor-pointer">
+              <span className="flex-1">
+                <span className="block text-sm">Read-only mode</span>
+                <span className="block text-xs text-[var(--color-fg-muted)] mt-1">
+                  Hides merge and close actions across the app. Useful if your
+                  token doesn't have write permissions.
+                </span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={readOnly}
+                onClick={() => setMode(readOnly ? 'readwrite' : 'readonly')}
+                className={`relative shrink-0 w-10 h-6 rounded-full transition-colors mt-1 ${
+                  readOnly
+                    ? 'bg-[var(--color-accent)]'
+                    : 'bg-[var(--color-border)]'
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    readOnly ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
           </Section>
 
           <Section icon={Sparkles} title="LLM provider">

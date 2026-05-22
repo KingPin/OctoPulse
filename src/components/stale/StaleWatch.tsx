@@ -11,7 +11,9 @@ import {
 import { staleWatch, type StaleItem, type StaleLevel } from './staleness'
 import { ConfirmModal } from '@/components/shell/ConfirmModal'
 import { closeIssue, mergePullRequest } from '@/lib/github/mutations'
+import { GitHubError } from '@/lib/github/client'
 import { toast } from '@/hooks/useToast'
+import { useWritesEnabled } from '@/hooks/usePatMode'
 import * as storage from '@/lib/storage'
 import type { RepoSnapshot } from '@/types/github'
 
@@ -41,21 +43,24 @@ interface RowProps {
   item: StaleItem
   selected: boolean
   onToggle: (id: string) => void
+  selectable: boolean
 }
 
-function Row({ item, selected, onToggle }: RowProps) {
+function Row({ item, selected, onToggle, selectable }: RowProps) {
   const Icon = item.isPullRequest ? GitPullRequest : MessageSquare
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-2 border-l-4 border-t border-r border-b border-[var(--color-border-muted)] first:rounded-t-md last:rounded-b-md ${LEVEL_BORDER[item.level]} ${selected ? 'ring-1 ring-inset ring-[var(--color-accent)]' : ''}`}
     >
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={() => onToggle(item.id)}
-        aria-label={`Select ${item.repoNameWithOwner}#${item.number}`}
-        className="shrink-0 accent-[var(--color-accent)]"
-      />
+      {selectable && (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggle(item.id)}
+          aria-label={`Select ${item.repoNameWithOwner}#${item.number}`}
+          className="shrink-0 accent-[var(--color-accent)]"
+        />
+      )}
       <a
         href={item.url}
         target="_blank"
@@ -107,6 +112,7 @@ function parseRepo(nameWithOwner: string): { owner: string; name: string } | nul
 }
 
 export function StaleWatch({ snapshots, isDemo, onMutated }: Props) {
+  const writesEnabled = useWritesEnabled()
   const allItems = useMemo(() => staleWatch(snapshots), [snapshots])
   const [hideBots, setHideBots] = useState<boolean>(
     () => storage.get<boolean>('hideStaleBots') ?? false,
@@ -178,7 +184,12 @@ export function StaleWatch({ snapshots, isDemo, onMutated }: Props) {
         ok += 1
       } catch (e) {
         failed += 1
-        const msg = e instanceof Error ? e.message : 'failed'
+        const msg =
+          e instanceof GitHubError && e.kind === 'forbidden'
+            ? "token can't perform this action"
+            : e instanceof Error
+              ? e.message
+              : 'failed'
         toast(`${item.repoNameWithOwner}#${item.number}: ${msg}`, 'error')
       }
     }
@@ -222,7 +233,7 @@ export function StaleWatch({ snapshots, isDemo, onMutated }: Props) {
             </span>
           </label>
         )}
-        {items.length > 0 && (
+        {writesEnabled && items.length > 0 && (
           <button
             type="button"
             onClick={() => {
@@ -236,7 +247,7 @@ export function StaleWatch({ snapshots, isDemo, onMutated }: Props) {
         )}
       </div>
 
-      {hasSelection && (
+      {writesEnabled && hasSelection && (
         <div className="sticky top-[57px] z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-2 border border-[var(--color-accent)] bg-[var(--color-canvas-subtle)] rounded-md shadow-sm">
           <div className="text-xs text-[var(--color-fg-muted)]">
             <span className="font-semibold text-[var(--color-fg-default)]">
@@ -282,6 +293,7 @@ export function StaleWatch({ snapshots, isDemo, onMutated }: Props) {
               item={item}
               selected={selected.has(item.id)}
               onToggle={toggle}
+              selectable={writesEnabled}
             />
           ))}
         </div>

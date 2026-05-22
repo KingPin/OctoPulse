@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as storage from '@/lib/storage'
 import { validateToken } from '@/lib/github/pat'
+import type { PatMode } from '@/lib/github/pat'
 import type { Viewer } from '@/lib/github/types'
+import { setPatMode } from './usePatMode'
 import { toast } from './useToast'
 
 export type AuthState =
@@ -17,7 +19,7 @@ interface StoredAuth {
 
 export function useAuth(): {
   state: AuthState
-  signIn: (token: string, viewer: Viewer) => void
+  signIn: (token: string, viewer: Viewer, mode: PatMode) => void
   signOut: () => void
 } {
   const [state, setState] = useState<AuthState>({ status: 'loading' })
@@ -50,9 +52,10 @@ export function useAuth(): {
     })
   }, [])
 
-  const signIn = useCallback((token: string, viewer: Viewer) => {
+  const signIn = useCallback((token: string, viewer: Viewer, mode: PatMode) => {
     generationRef.current += 1
     const persisted = storage.set<StoredAuth>('githubToken', { token, viewer })
+    setPatMode(mode)
     if (!persisted) {
       toast(
         'Signed in, but your token could not be saved — you will need to paste it again on reload.',

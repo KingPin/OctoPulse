@@ -2,7 +2,33 @@ import type { ValidationResult, ValidationError, Viewer } from './types'
 
 const API_BASE = 'https://api.github.com'
 
-export const REQUIRED_CLASSIC_SCOPES = ['repo', 'read:org', 'read:user'] as const
+export type PatMode = 'readonly' | 'readwrite'
+
+export interface PermissionItem {
+  name: string
+  access: 'Read' | 'Read & write'
+}
+
+/** Fine-grained PAT permissions per lane. Drives the PAT screen UI. */
+export const FINE_GRAINED_PERMISSIONS: Record<PatMode, PermissionItem[]> = {
+  readonly: [
+    { name: 'Contents', access: 'Read' },
+    { name: 'Issues', access: 'Read' },
+    { name: 'Pull requests', access: 'Read' },
+    { name: 'Metadata', access: 'Read' },
+    { name: 'Members', access: 'Read' },
+  ],
+  readwrite: [
+    { name: 'Contents', access: 'Read & write' },
+    { name: 'Issues', access: 'Read & write' },
+    { name: 'Pull requests', access: 'Read & write' },
+    { name: 'Metadata', access: 'Read' },
+    { name: 'Members', access: 'Read' },
+  ],
+}
+
+/** Classic scopes for read & write. (Classic PATs have no clean read-only equivalent for private repos.) */
+export const CLASSIC_SCOPES_READWRITE = ['repo', 'read:org', 'read:user'] as const
 
 /** Validate a PAT by calling GET /user. Works for both classic and fine-grained tokens. */
 export async function validateToken(
@@ -67,10 +93,17 @@ export async function validateToken(
   return { ok: true, viewer, scopes, rateLimitRemaining }
 }
 
-/** Whether a classic-PAT scope set covers what OctoPulse needs. Fine-grained returns true (no scopes header). */
-export function hasRequiredScopes(scopes: string[]): boolean {
-  if (scopes.length === 0) return true // fine-grained PAT — can't verify here
-  // `repo` implies all sub-scopes. `read:org` implies read access to org membership.
+/**
+ * Whether a classic-PAT scope set covers what OctoPulse needs for the given lane.
+ * Fine-grained tokens return no scopes header — we can't verify them here, so they pass.
+ *
+ * Read-only lane: no scope enforcement. Users opting into read-only know their token
+ * may have limited reach (e.g. only public repos). If it can't see a repo, the repo
+ * just won't appear; we don't need to gate sign-in on that.
+ */
+export function hasRequiredScopes(scopes: string[], mode: PatMode): boolean {
+  if (scopes.length === 0) return true // fine-grained — can't verify
+  if (mode === 'readonly') return true
   const has = (s: string) => scopes.includes(s)
   return has('repo') && (has('read:org') || has('admin:org'))
 }

@@ -5,8 +5,10 @@ import { InboxRow } from './InboxRow'
 import { ConfirmModal } from '@/components/shell/ConfirmModal'
 import { SummarizerModal } from '@/components/llm/SummarizerModal'
 import { closeIssue, mergePullRequest } from '@/lib/github/mutations'
+import { GitHubError } from '@/lib/github/client'
 import { useLLM } from '@/hooks/useLLM'
 import { useClassifications } from '@/hooks/useClassifications'
+import { useWritesEnabled } from '@/hooks/usePatMode'
 import { toast } from '@/hooks/useToast'
 import { staleWatch } from '@/components/stale/staleness'
 import type { RepoSnapshot } from '@/types/github'
@@ -38,6 +40,7 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
   const [busyId, setBusyId] = useState<string | null>(null)
   const { isReady: llmReady } = useLLM()
   const canSummarize = isDemo || llmReady
+  const writesEnabled = useWritesEnabled()
   const classifications = useClassifications({ items, isDemo })
 
   const runAction = async () => {
@@ -67,8 +70,16 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
       setTarget(null)
       onMutated()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Action failed'
-      toast(msg, 'error')
+      if (e instanceof GitHubError && e.kind === 'forbidden') {
+        toast(
+          "Token can't perform this action — switch to a Read & write PAT, or enable Read-only mode in Settings.",
+          'error',
+          8000,
+        )
+      } else {
+        const msg = e instanceof Error ? e.message : 'Action failed'
+        toast(msg, 'error')
+      }
     } finally {
       setBusyId(null)
     }
@@ -110,8 +121,9 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
       <div className="border border-[var(--color-border)] rounded-md overflow-hidden">
         {items.map((item) => {
           const canAct =
-            (item.isPullRequest && item.category !== 'blocked') ||
-            !item.isPullRequest
+            writesEnabled &&
+            ((item.isPullRequest && item.category !== 'blocked') ||
+              !item.isPullRequest)
           return (
             <InboxRow
               key={item.id}

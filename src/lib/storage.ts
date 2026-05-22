@@ -3,6 +3,7 @@ const PREFIX = 'octopulse:'
 export type StorageKey =
   | 'theme'
   | 'githubToken'
+  | 'patMode'
   | 'trackedRepos'
   | 'llmConfig'
   | 'lastFetchAt'
