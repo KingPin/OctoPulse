@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  Bot,
   ExternalLink,
   GitPullRequest,
   Hourglass,
   MessageSquare,
 } from 'lucide-react'
 import { staleWatch, type StaleItem, type StaleLevel } from './staleness'
+import * as storage from '@/lib/storage'
 import type { RepoSnapshot } from '@/types/github'
 
 interface Props {
@@ -52,6 +54,12 @@ function Row({ item }: { item: StaleItem }) {
         </span>
         <span className="truncate text-sm">{item.title}</span>
       </div>
+      {item.isBotAuthored && (
+        <Bot
+          className="w-3.5 h-3.5 text-[var(--color-fg-subtle)] shrink-0"
+          aria-label="Bot-authored"
+        />
+      )}
       <span
         className={`text-xs font-mono shrink-0 ${LEVEL_TEXT[item.level]}`}
       >
@@ -66,9 +74,24 @@ function Row({ item }: { item: StaleItem }) {
 }
 
 export function StaleWatch({ snapshots }: Props) {
-  const items = useMemo(() => staleWatch(snapshots), [snapshots])
+  const allItems = useMemo(() => staleWatch(snapshots), [snapshots])
+  const [hideBots, setHideBots] = useState<boolean>(
+    () => storage.get<boolean>('hideStaleBots') ?? false,
+  )
+  useEffect(() => {
+    storage.set('hideStaleBots', hideBots)
+  }, [hideBots])
 
-  if (items.length === 0) {
+  const botCount = useMemo(
+    () => allItems.filter((i) => i.isBotAuthored).length,
+    [allItems],
+  )
+  const items = useMemo(
+    () => (hideBots ? allItems.filter((i) => !i.isBotAuthored) : allItems),
+    [allItems, hideBots],
+  )
+
+  if (allItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-8 border border-dashed border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)]">
         <Hourglass className="w-6 h-6 text-[var(--color-success)]" aria-hidden />
@@ -78,10 +101,38 @@ export function StaleWatch({ snapshots }: Props) {
   }
 
   return (
-    <div className="flex flex-col">
-      {items.map((item) => (
-        <Row key={item.id} item={item} />
-      ))}
+    <div className="flex flex-col gap-2">
+      {botCount > 0 && (
+        <label className="flex items-center gap-2 text-xs text-[var(--color-fg-muted)] cursor-pointer w-fit">
+          <input
+            type="checkbox"
+            checked={hideBots}
+            onChange={(e) => setHideBots(e.target.checked)}
+            className="accent-[var(--color-accent)]"
+          />
+          <Bot className="w-3.5 h-3.5" aria-hidden />
+          Hide dependency bots
+          <span className="font-mono text-[var(--color-fg-subtle)]">
+            ({botCount})
+          </span>
+        </label>
+      )}
+
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 p-8 border border-dashed border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)]">
+          <Hourglass className="w-6 h-6 text-[var(--color-success)]" aria-hidden />
+          <p className="text-sm">
+            All remaining stale items are from dependency bots — toggle the
+            filter off to see them.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          {items.map((item) => (
+            <Row key={item.id} item={item} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

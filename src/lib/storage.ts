@@ -6,6 +6,7 @@ export type StorageKey =
   | 'trackedRepos'
   | 'llmConfig'
   | 'lastFetchAt'
+  | 'hideStaleBots'
 
 export function get<T>(key: StorageKey): T | null {
   try {
