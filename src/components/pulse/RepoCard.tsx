@@ -126,19 +126,23 @@ export function RepoCard({ repo }: Props) {
         </div>
       </dl>
 
-      <div className="flex items-center justify-between text-[10px] text-[var(--color-fg-subtle)] uppercase tracking-wider">
-        {lastRelease ? (
-          <span className="flex items-center gap-1">
-            <Tag className="w-3 h-3" aria-hidden />
-            {lastRelease.tagName}
-          </span>
-        ) : (
-          <span>No releases</span>
-        )}
-        <span className={checkState && checkState !== 'SUCCESS' ? 'text-[var(--color-danger)]' : ''}>
-          main: {checkState ?? '—'}
-        </span>
-      </div>
+      {(lastRelease || checkState) && (
+        <div className="flex items-center justify-between text-[10px] text-[var(--color-fg-subtle)] uppercase tracking-wider">
+          {lastRelease ? (
+            <span className="flex items-center gap-1">
+              <Tag className="w-3 h-3" aria-hidden />
+              {lastRelease.tagName}
+            </span>
+          ) : (
+            <span />
+          )}
+          {checkState && (
+            <span className={checkState !== 'SUCCESS' ? 'text-[var(--color-danger)]' : ''}>
+              main: {checkState}
+            </span>
+          )}
+        </div>
+      )}
     </a>
   )
 }
