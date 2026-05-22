@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { SettingsPanel } from './SettingsPanel'
+import { CommandPalette, useCommandPaletteShortcut } from './CommandPalette'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { ActionInbox } from '@/components/inbox/ActionInbox'
 import { categorize } from '@/components/inbox/categorize'
@@ -146,6 +147,8 @@ export function Dashboard({
 }: Props) {
   const { state, refresh } = useDashboardData({ trackedRepos, isDemo })
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  useCommandPaletteShortcut(() => setPaletteOpen(true))
   const inboxCount = useMemo(
     () => categorize(state.snapshots, viewer.login).length,
     [state.snapshots, viewer.login],
@@ -168,6 +171,7 @@ export function Dashboard({
         onRefresh={refresh}
         onOpenSettings={() => setSettingsOpen(true)}
         onSignOut={onSignOut}
+        onOpenPalette={() => setPaletteOpen(true)}
       />
 
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-10">
@@ -239,6 +243,12 @@ export function Dashboard({
         isDemo={isDemo}
         onEditRepos={onEditRepos}
         onSignOut={onSignOut}
+      />
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        snapshots={state.snapshots}
       />
     </main>
   )

@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Activity,
   LogOut,
+  MonitorSmartphone,
+  Moon,
   RefreshCw,
+  Search,
   Settings,
   Sun,
-  Moon,
-  MonitorSmartphone,
 } from 'lucide-react'
 import { useTheme, type Theme } from '@/hooks/useTheme'
 import type { Viewer } from '@/lib/github/types'
@@ -22,6 +23,7 @@ interface Props {
   onRefresh: () => void
   onOpenSettings: () => void
   onSignOut: () => void
+  onOpenPalette: () => void
 }
 
 const SECOND_MS = 1000
@@ -135,6 +137,11 @@ function ThemeToggle() {
   )
 }
 
+function isMac(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Mac|iPhone|iPad/.test(navigator.platform)
+}
+
 export function TopBar({
   viewer,
   isDemo,
@@ -146,7 +153,9 @@ export function TopBar({
   onRefresh,
   onOpenSettings,
   onSignOut,
+  onOpenPalette,
 }: Props) {
+  const modKey = isMac() ? '⌘' : 'Ctrl'
   return (
     <header className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-canvas-subtle)] sticky top-0 z-10">
       <div className="flex items-center gap-2">
@@ -213,6 +222,19 @@ export function TopBar({
             resetAt={rateLimitResetAt}
           />
         )}
+
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          aria-label="Quick filter (Cmd or Ctrl K)"
+          title={`Quick filter (${modKey}K)`}
+          className="min-h-[36px] flex items-center gap-2 px-2 border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]"
+        >
+          <Search className="w-3.5 h-3.5" aria-hidden />
+          <kbd className="hidden sm:inline text-[10px] font-mono text-[var(--color-fg-subtle)]">
+            {modKey}K
+          </kbd>
+        </button>
 
         <ThemeToggle />
 
