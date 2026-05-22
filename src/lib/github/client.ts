@@ -112,16 +112,26 @@ export async function graphql<T = unknown>(
       errors?: Array<{ message: string }>
     }
 
-    if (json.errors && json.errors.length > 0) {
-      throw new GitHubError(
-        json.errors.map((e) => e.message).join('; '),
-        200,
-        json.errors,
-      )
+    // GitHub returns partial data + errors[] when a single field is forbidden
+    // (e.g. statusCheckRollup when the PAT lacks repo:status). Only throw when
+    // there is no usable data; otherwise surface the errors via console and
+    // return what we got.
+    if (!json.data) {
+      if (json.errors && json.errors.length > 0) {
+        throw new GitHubError(
+          json.errors.map((e) => e.message).join('; '),
+          200,
+          json.errors,
+        )
+      }
+      throw new GitHubError('Empty response from GitHub', 200)
     }
 
-    if (!json.data) {
-      throw new GitHubError('Empty response from GitHub', 200)
+    if (json.errors && json.errors.length > 0) {
+      console.warn(
+        'GitHub GraphQL partial errors:',
+        json.errors.map((e) => e.message),
+      )
     }
 
     return { data: json.data, rateLimit }
