@@ -3,11 +3,13 @@ import {
   CircleAlert,
   CircleCheck,
   CircleDot,
+  Globe,
   GitBranch,
   HelpCircle,
   Hourglass,
   Inbox,
   Loader2,
+  Lock,
 } from 'lucide-react'
 import { TopBar } from './TopBar'
 import { SettingsPanel } from './SettingsPanel'
@@ -18,8 +20,10 @@ import { categorize } from '@/components/inbox/categorize'
 import { RepoPulseGrid } from '@/components/pulse/RepoPulseGrid'
 import { StaleWatch } from '@/components/stale/StaleWatch'
 import { staleWatch } from '@/components/stale/staleness'
+import * as storage from '@/lib/storage'
 import type { TrackedRepo } from '@/hooks/useRepos'
 import type { Viewer } from '@/lib/github/types'
+import type { RepoSnapshot } from '@/types/github'
 
 interface Props {
   viewer: Viewer
@@ -138,6 +142,63 @@ function HealthLegend() {
   )
 }
 
+type Visibility = 'all' | 'public' | 'private'
+
+const VISIBILITY_OPTIONS: { value: Visibility; label: string; Icon: typeof Globe }[] = [
+  { value: 'all', label: 'All', Icon: GitBranch },
+  { value: 'public', label: 'Public', Icon: Globe },
+  { value: 'private', label: 'Private', Icon: Lock },
+]
+
+interface VisibilityFilterProps {
+  value: Visibility
+  onChange: (v: Visibility) => void
+  counts: Record<Visibility, number>
+}
+
+function VisibilityFilter({ value, onChange, counts }: VisibilityFilterProps) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Filter by visibility"
+      className="flex items-center gap-1 p-0.5 border border-[var(--color-border)] bg-[var(--color-canvas-subtle)] rounded-md text-xs"
+    >
+      {VISIBILITY_OPTIONS.map(({ value: v, label, Icon }) => {
+        const active = v === value
+        return (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(v)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded ${
+              active
+                ? 'bg-[var(--color-canvas)] text-[var(--color-fg-default)] shadow-sm'
+                : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]'
+            }`}
+          >
+            <Icon className="w-3 h-3" aria-hidden />
+            <span>{label}</span>
+            <span className="font-mono text-[10px] text-[var(--color-fg-subtle)]">
+              {counts[v]}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function applyVisibility(
+  snapshots: RepoSnapshot[],
+  visibility: Visibility,
+): RepoSnapshot[] {
+  if (visibility === 'all') return snapshots
+  if (visibility === 'private') return snapshots.filter((r) => r.isPrivate)
+  return snapshots.filter((r) => !r.isPrivate)
+}
+
 export function Dashboard({
   viewer,
   isDemo,
@@ -149,13 +210,32 @@ export function Dashboard({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   useCommandPaletteShortcut(() => setPaletteOpen(true))
+  const [visibility, setVisibilityState] = useState<Visibility>(
+    () => storage.get<Visibility>('visibilityFilter') ?? 'all',
+  )
+  const setVisibility = (v: Visibility) => {
+    setVisibilityState(v)
+    storage.set<Visibility>('visibilityFilter', v)
+  }
+  const visibilityCounts = useMemo<Record<Visibility, number>>(() => {
+    const priv = state.snapshots.filter((r) => r.isPrivate).length
+    return {
+      all: state.snapshots.length,
+      public: state.snapshots.length - priv,
+      private: priv,
+    }
+  }, [state.snapshots])
+  const filteredSnapshots = useMemo(
+    () => applyVisibility(state.snapshots, visibility),
+    [state.snapshots, visibility],
+  )
   const inboxCount = useMemo(
-    () => categorize(state.snapshots, viewer.login).length,
-    [state.snapshots, viewer.login],
+    () => categorize(filteredSnapshots, viewer.login).length,
+    [filteredSnapshots, viewer.login],
   )
   const staleCount = useMemo(
-    () => staleWatch(state.snapshots).length,
-    [state.snapshots],
+    () => staleWatch(filteredSnapshots).length,
+    [filteredSnapshots],
   )
 
   return (
@@ -193,45 +273,72 @@ export function Dashboard({
 
         {state.snapshots.length > 0 && (
           <>
-            <section aria-label="Action required">
-              <SectionHeader
-                icon={Inbox}
-                title="Action Required"
-                count={inboxCount}
-                caption="Items that need your attention"
-              />
-              <ActionInbox
-                snapshots={state.snapshots}
-                viewerLogin={viewer.login}
-                isDemo={isDemo}
-                onMutated={refresh}
-              />
-            </section>
+            {(visibilityCounts.public > 0 && visibilityCounts.private > 0) && (
+              <div className="-mb-6 flex items-center gap-2">
+                <VisibilityFilter
+                  value={visibility}
+                  onChange={setVisibility}
+                  counts={visibilityCounts}
+                />
+              </div>
+            )}
 
-            <section aria-label="Repository pulse">
-              <SectionHeader
-                icon={GitBranch}
-                title="Repository Pulse"
-                count={state.snapshots.length}
-                caption="Health of each tracked repo"
-                info={<HealthLegend />}
-              />
-              <RepoPulseGrid snapshots={state.snapshots} />
-            </section>
+            {filteredSnapshots.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 p-8 border border-dashed border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)]">
+                <p className="text-sm">
+                  No {visibility} repos in your tracked list.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setVisibility('all')}
+                  className="text-xs px-2 py-1 border border-[var(--color-border)] rounded-md hover:text-[var(--color-fg-default)]"
+                >
+                  Show all
+                </button>
+              </div>
+            ) : (
+              <>
+                <section aria-label="Action required">
+                  <SectionHeader
+                    icon={Inbox}
+                    title="Action Required"
+                    count={inboxCount}
+                    caption="Items that need your attention"
+                  />
+                  <ActionInbox
+                    snapshots={filteredSnapshots}
+                    viewerLogin={viewer.login}
+                    isDemo={isDemo}
+                    onMutated={refresh}
+                  />
+                </section>
 
-            <section aria-label="Stale watch">
-              <SectionHeader
-                icon={Hourglass}
-                title="Stale Watch"
-                count={staleCount}
-                caption="Open ≥7d without movement"
-              />
-              <StaleWatch
-                snapshots={state.snapshots}
-                isDemo={isDemo}
-                onMutated={refresh}
-              />
-            </section>
+                <section aria-label="Repository pulse">
+                  <SectionHeader
+                    icon={GitBranch}
+                    title="Repository Pulse"
+                    count={filteredSnapshots.length}
+                    caption="Health of each tracked repo"
+                    info={<HealthLegend />}
+                  />
+                  <RepoPulseGrid snapshots={filteredSnapshots} />
+                </section>
+
+                <section aria-label="Stale watch">
+                  <SectionHeader
+                    icon={Hourglass}
+                    title="Stale Watch"
+                    count={staleCount}
+                    caption="Open ≥7d without movement"
+                  />
+                  <StaleWatch
+                    snapshots={filteredSnapshots}
+                    isDemo={isDemo}
+                    onMutated={refresh}
+                  />
+                </section>
+              </>
+            )}
           </>
         )}
       </div>

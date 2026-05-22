@@ -7,6 +7,7 @@ export type StorageKey =
   | 'llmConfig'
   | 'lastFetchAt'
   | 'hideStaleBots'
+  | 'visibilityFilter'
 
 export function get<T>(key: StorageKey): T | null {
   try {
