@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   Activity,
   LogOut,
@@ -154,39 +155,106 @@ export function TopBar({
 
         <ThemeToggle />
 
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          aria-label="Settings"
-          title="Settings"
-          className="min-w-[36px] min-h-[36px] flex items-center justify-center border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]"
-        >
-          <Settings className="w-3.5 h-3.5" aria-hidden />
-        </button>
-
-        <div className="flex items-center gap-2 text-sm">
-          <img
-            src={viewer.avatarUrl}
-            alt=""
-            className="w-6 h-6 rounded-full"
-          />
-          <span className="hidden sm:inline text-[var(--color-fg-muted)]">
-            @{viewer.login}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="min-w-[36px] min-h-[36px] flex items-center gap-1 px-2 text-xs text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)] border border-[var(--color-border)] rounded-md"
-          aria-label={isDemo ? 'Exit demo' : 'Sign out'}
-        >
-          <LogOut className="w-3.5 h-3.5" aria-hidden />
-          <span className="hidden sm:inline">
-            {isDemo ? 'Exit demo' : 'Sign out'}
-          </span>
-        </button>
+        <UserMenu
+          viewer={viewer}
+          isDemo={isDemo}
+          lastUpdatedAt={lastUpdatedAt}
+          onOpenSettings={onOpenSettings}
+          onSignOut={onSignOut}
+        />
       </div>
     </header>
+  )
+}
+
+interface UserMenuProps {
+  viewer: Viewer
+  isDemo: boolean
+  lastUpdatedAt: number | null
+  onOpenSettings: () => void
+  onSignOut: () => void
+}
+
+function UserMenu({
+  viewer,
+  isDemo,
+  lastUpdatedAt,
+  onOpenSettings,
+  onSignOut,
+}: UserMenuProps) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Account menu for @${viewer.login}`}
+        className="flex items-center gap-2 min-h-[36px] px-1.5 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-canvas)] text-sm"
+      >
+        <img src={viewer.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
+        <span className="hidden sm:inline text-[var(--color-fg-muted)]">
+          @{viewer.login}
+        </span>
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 mt-1 w-56 z-20 border border-[var(--color-border)] bg-[var(--color-canvas-subtle)] rounded-md shadow-lg overflow-hidden text-sm"
+        >
+          <div className="px-3 py-2 border-b border-[var(--color-border-muted)]">
+            <div className="font-mono text-xs text-[var(--color-fg-default)]">
+              @{viewer.login}
+            </div>
+            <div className="text-[11px] text-[var(--color-fg-subtle)]">
+              Updated {formatLastUpdated(lastUpdatedAt)}
+            </div>
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onOpenSettings()
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left text-[var(--color-fg-default)] hover:bg-[var(--color-canvas)]"
+          >
+            <Settings className="w-3.5 h-3.5 text-[var(--color-fg-muted)]" aria-hidden />
+            Settings
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onSignOut()
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left text-[var(--color-fg-default)] hover:bg-[var(--color-canvas)]"
+          >
+            <LogOut className="w-3.5 h-3.5 text-[var(--color-fg-muted)]" aria-hidden />
+            {isDemo ? 'Exit demo' : 'Sign out'}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
