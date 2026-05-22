@@ -46,6 +46,28 @@ function formatResetIn(resetAt: number | null): string {
   return `${Math.ceil(delta / HOUR_MS)}h`
 }
 
+type RateLimitTone = 'ok' | 'warn' | 'low'
+
+function rateLimitTone(remaining: number, limit: number | null): RateLimitTone {
+  const denom = limit ?? 5000
+  const ratio = remaining / denom
+  if (ratio < 0.1) return 'low'
+  if (ratio < 0.25) return 'warn'
+  return 'ok'
+}
+
+function rateLimitTitle(
+  remaining: number,
+  limit: number | null,
+  resetAt: number | null,
+): string {
+  const denom = limit ?? 5000
+  const resetLabel = resetAt
+    ? `Resets in ${formatResetIn(resetAt)} (${new Date(resetAt).toLocaleTimeString()})`
+    : 'Reset time unknown'
+  return `GitHub API: ${remaining.toLocaleString()} of ${denom.toLocaleString()} remaining. ${resetLabel}.`
+}
+
 interface RateLimitChipProps {
   remaining: number
   limit: number | null
@@ -54,25 +76,40 @@ interface RateLimitChipProps {
 
 function RateLimitChip({ remaining, limit, resetAt }: RateLimitChipProps) {
   const denom = limit ?? 5000
-  const ratio = remaining / denom
-  const low = ratio < 0.1
-  const warn = !low && ratio < 0.25
-  const tone = low
-    ? 'text-[var(--color-danger)] border-[var(--color-danger-border)] bg-[var(--color-danger-bg)]'
-    : warn
-      ? 'text-[var(--color-attention)] border-[var(--color-attention-border)] bg-[var(--color-attention-bg)]'
-      : 'text-[var(--color-fg-muted)] border-[var(--color-border)]'
-  const resetLabel = resetAt
-    ? `Resets in ${formatResetIn(resetAt)} (${new Date(resetAt).toLocaleTimeString()})`
-    : 'Reset time unknown'
+  const tone = rateLimitTone(remaining, limit)
+  const cls =
+    tone === 'low'
+      ? 'text-[var(--color-danger)] border-[var(--color-danger-border)] bg-[var(--color-danger-bg)]'
+      : tone === 'warn'
+        ? 'text-[var(--color-attention)] border-[var(--color-attention-border)] bg-[var(--color-attention-bg)]'
+        : 'text-[var(--color-fg-muted)] border-[var(--color-border)]'
   return (
     <span
-      className={`hidden sm:inline-flex items-center px-1.5 py-0.5 text-[11px] font-mono border rounded-md ${tone}`}
-      title={`GitHub API: ${remaining.toLocaleString()} of ${denom.toLocaleString()} remaining. ${resetLabel}.`}
+      className={`hidden sm:inline-flex items-center px-1.5 py-0.5 text-[11px] font-mono border rounded-md ${cls}`}
+      title={rateLimitTitle(remaining, limit, resetAt)}
       aria-label={`GitHub API ${remaining} of ${denom} remaining`}
     >
       {remaining.toLocaleString()}/{denom.toLocaleString()}
     </span>
+  )
+}
+
+interface RateLimitDotProps {
+  tone: 'warn' | 'low'
+  title: string
+}
+
+function RateLimitDot({ tone, title }: RateLimitDotProps) {
+  const cls =
+    tone === 'low'
+      ? 'bg-[var(--color-danger)] ring-[var(--color-danger-bg)]'
+      : 'bg-[var(--color-attention)] ring-[var(--color-attention-bg)]'
+  return (
+    <span
+      aria-hidden
+      title={title}
+      className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ring-2 ${cls}`}
+    />
   )
 }
 
@@ -131,14 +168,38 @@ export function TopBar({
             type="button"
             onClick={onRefresh}
             disabled={isFetching}
-            aria-label="Refresh dashboard"
-            title="Refresh"
-            className="min-w-[36px] min-h-[36px] flex items-center justify-center border border-[var(--color-border)] rounded-md hover:text-[var(--color-fg-default)] disabled:opacity-50"
+            aria-label={
+              !isDemo && rateLimitRemaining !== null
+                ? `Refresh dashboard. ${rateLimitTitle(rateLimitRemaining, rateLimitLimit, rateLimitResetAt)}`
+                : 'Refresh dashboard'
+            }
+            title={
+              !isDemo && rateLimitRemaining !== null
+                ? rateLimitTitle(rateLimitRemaining, rateLimitLimit, rateLimitResetAt)
+                : 'Refresh'
+            }
+            className="relative min-w-[36px] min-h-[36px] flex items-center justify-center border border-[var(--color-border)] rounded-md hover:text-[var(--color-fg-default)] disabled:opacity-50"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`}
               aria-hidden
             />
+            {!isDemo &&
+              rateLimitRemaining !== null &&
+              (() => {
+                const tone = rateLimitTone(rateLimitRemaining, rateLimitLimit)
+                if (tone === 'ok') return null
+                return (
+                  <RateLimitDot
+                    tone={tone}
+                    title={rateLimitTitle(
+                      rateLimitRemaining,
+                      rateLimitLimit,
+                      rateLimitResetAt,
+                    )}
+                  />
+                )
+              })()}
           </button>
           <span className="hidden sm:inline">
             Updated {formatLastUpdated(lastUpdatedAt)}
