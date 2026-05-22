@@ -38,7 +38,7 @@ coverage/
 # Playwright scratch
 .playwright-mcp/
 *.screenshot.png
-step*-*.png
-octopulse-*.png
-topbar-*.png
-pulse-*.png
+/step*-*.png
+/octopulse-*.png
+/topbar-*.png
+/pulse-*.png

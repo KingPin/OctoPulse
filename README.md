@@ -2,11 +2,14 @@
 
 A zero-backend GitHub maintainer dashboard. Triage *what needs you* and *what's rotting* across many repos from a single page — no server, no data collection, no vendor lock-in.
 
+![OctoPulse dashboard in demo mode](docs/screenshots/octopulse-desktop.png)
+
 - **Action Required Inbox** — review requests, assignments, blocked PRs, and unanswered external issues
 - **Repository Pulse Grid** — health-at-a-glance for every tracked repo (green / amber / red)
 - **Stale Watch** — open threads ranked by days-since-last-activity
 - **One-click merge / close** — confirm modal, REST mutation, refresh
 - **LLM-powered thread summarizer + intent classifier** — bring-your-own provider (OpenAI / Groq / OpenRouter / Gemini / any OpenAI-compatible endpoint, including local llama.cpp / Ollama)
+- **Read-only or read & write** — pick a PAT lane at sign-in; write actions are hidden when read-only
 - **Demo mode** — drive the full UI with no token
 
 Everything runs in your browser. Your PAT and LLM key live in `localStorage` and are never transmitted anywhere except directly to the APIs they belong to.
@@ -115,3 +118,9 @@ Vite 8 · React 19 · TypeScript strict · Tailwind v4 · Lucide React · Vitest
 GitHub data: GraphQL primary (`/graphql`) with REST fallbacks for the few endpoints GraphQL doesn't cover (merge PR, close issue, fetch issue body, fetch comments).
 
 Refresh strategy: load + manual button + on tab-focus if the cache is older than 5 minutes.
+
+---
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
