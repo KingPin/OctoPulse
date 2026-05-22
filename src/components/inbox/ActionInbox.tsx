@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Inbox } from 'lucide-react'
+import { ArrowRight, Hourglass, Inbox } from 'lucide-react'
 import { categorize, type InboxItem } from './categorize'
 import { InboxRow } from './InboxRow'
 import { ConfirmModal } from '@/components/shell/ConfirmModal'
@@ -8,6 +8,7 @@ import { closeIssue, mergePullRequest } from '@/lib/github/mutations'
 import { useLLM } from '@/hooks/useLLM'
 import { useClassifications } from '@/hooks/useClassifications'
 import { toast } from '@/hooks/useToast'
+import { staleWatch } from '@/components/stale/staleness'
 import type { RepoSnapshot } from '@/types/github'
 
 interface Props {
@@ -74,10 +75,32 @@ export function ActionInbox({ snapshots, viewerLogin, isDemo, onMutated }: Props
   }
 
   if (items.length === 0) {
+    const oldestStale = staleWatch(snapshots)[0] ?? null
     return (
-      <div className="flex flex-col items-center justify-center gap-2 p-8 border border-dashed border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)]">
+      <div className="flex flex-col items-center justify-center gap-3 p-8 border border-dashed border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)]">
         <Inbox className="w-6 h-6 text-[var(--color-success)]" aria-hidden />
         <p className="text-sm">Inbox zero — nothing needs you right now.</p>
+        {oldestStale && (
+          <a
+            href={oldestStale.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-2 text-xs text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]"
+          >
+            <Hourglass className="w-3.5 h-3.5 text-[var(--color-attention)]" aria-hidden />
+            Oldest stale item:{' '}
+            <span className="font-mono">
+              {oldestStale.repoNameWithOwner}#{oldestStale.number}
+            </span>{' '}
+            <span className="text-[var(--color-fg-subtle)]">
+              ({oldestStale.daysQuiet}d quiet)
+            </span>
+            <ArrowRight
+              className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-hidden
+            />
+          </a>
+        )}
       </div>
     )
   }
