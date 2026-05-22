@@ -61,7 +61,7 @@ export function RepoCard({ repo }: Props) {
       href={repo.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group flex flex-col gap-3 p-4 border border-[var(--color-border)] border-l-4 ${HEALTH_RING[health]} rounded-md bg-[var(--color-canvas-subtle)] hover:border-[var(--color-fg-muted)] transition-colors`}
+      className={`group flex flex-col gap-3 p-4 border border-[var(--color-border)] border-l-4 ${HEALTH_RING[health]} rounded-md bg-[var(--color-canvas-subtle)] hover:border-[var(--color-fg-muted)] hover:shadow-md hover:-translate-y-px transition-all`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
