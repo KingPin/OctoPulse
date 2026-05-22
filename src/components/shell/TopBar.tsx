@@ -75,40 +75,25 @@ function RateLimitChip({ remaining, limit, resetAt }: RateLimitChipProps) {
   )
 }
 
+const THEME_CYCLE: Record<Theme, { next: Theme; label: string; Icon: typeof Sun }> = {
+  auto: { next: 'light', label: 'Auto', Icon: MonitorSmartphone },
+  light: { next: 'dark', label: 'Light', Icon: Sun },
+  dark: { next: 'auto', label: 'Dark', Icon: Moon },
+}
+
 function ThemeToggle() {
   const [theme, setTheme] = useTheme()
-  const options: { value: Theme; label: string; Icon: typeof Sun }[] = [
-    { value: 'dark', label: 'Dark', Icon: Moon },
-    { value: 'light', label: 'Light', Icon: Sun },
-    { value: 'auto', label: 'Auto', Icon: MonitorSmartphone },
-  ]
+  const { next, label, Icon } = THEME_CYCLE[theme]
   return (
-    <div
-      className="flex items-center border border-[var(--color-border)] rounded-md overflow-hidden"
-      role="group"
-      aria-label="Theme"
+    <button
+      type="button"
+      onClick={() => setTheme(next)}
+      aria-label={`Theme: ${label}. Click to cycle.`}
+      title={`Theme: ${label} (click to cycle)`}
+      className="min-w-[36px] min-h-[36px] flex items-center justify-center border border-[var(--color-border)] rounded-md text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]"
     >
-      {options.map(({ value, label, Icon }) => {
-        const active = theme === value
-        return (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setTheme(value)}
-            aria-label={`Theme: ${label}`}
-            aria-pressed={active}
-            title={label}
-            className={`min-w-[36px] min-h-[36px] flex items-center justify-center px-2 text-xs transition-colors ${
-              active
-                ? 'bg-[var(--color-canvas-subtle)] text-[var(--color-fg-default)]'
-                : 'text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]'
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5" aria-hidden />
-          </button>
-        )
-      })}
-    </div>
+      <Icon className="w-3.5 h-3.5" aria-hidden />
+    </button>
   )
 }
 
