@@ -15,6 +15,8 @@ export interface DashboardState {
   isFetching: boolean
   error: string | null
   rateLimitRemaining: number | null
+  rateLimitLimit: number | null
+  rateLimitResetAt: number | null
 }
 
 interface UseDashboardDataOpts {
@@ -44,6 +46,8 @@ export function useDashboardData({
     isFetching: false,
     error: null,
     rateLimitRemaining: null,
+    rateLimitLimit: null,
+    rateLimitResetAt: null,
   }))
 
   const inFlight = useRef<AbortController | null>(null)
@@ -101,12 +105,15 @@ export function useDashboardData({
       const snapshots: RepoSnapshot[] = []
       const failures: Array<{ nameWithOwner: string; reason: string }> = []
       let remaining: number | null = null
+      let limit: number | null = null
+      let resetAt: number | null = null
       for (const outcome of outcomes) {
         if (outcome.ok) {
           if (outcome.result.data.repository) snapshots.push(outcome.result.data.repository)
-          if (outcome.result.rateLimit.remaining !== null) {
-            remaining = outcome.result.rateLimit.remaining
-          }
+          const rl = outcome.result.rateLimit
+          if (rl.remaining !== null) remaining = rl.remaining
+          if (rl.limit !== null) limit = rl.limit
+          if (rl.reset !== null) resetAt = rl.reset.getTime()
         } else {
           failures.push({ nameWithOwner: outcome.nameWithOwner, reason: outcome.reason })
         }
@@ -127,6 +134,8 @@ export function useDashboardData({
         isFetching: false,
         error: errorMsg,
         rateLimitRemaining: remaining,
+        rateLimitLimit: limit,
+        rateLimitResetAt: resetAt,
       })
       if (failures.length > 0 && failures.length < trackedRepos.length) {
         toast(

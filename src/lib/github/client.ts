@@ -6,6 +6,7 @@ const MAX_RETRIES = 3
 
 export interface RateLimit {
   remaining: number | null
+  limit: number | null
   reset: Date | null
   cost: number | null
 }
@@ -34,9 +35,11 @@ function sleep(ms: number): Promise<void> {
 
 function parseRateLimit(res: Response): RateLimit {
   const remaining = res.headers.get('x-ratelimit-remaining')
+  const limit = res.headers.get('x-ratelimit-limit')
   const reset = res.headers.get('x-ratelimit-reset')
   return {
     remaining: remaining ? Number(remaining) : null,
+    limit: limit ? Number(limit) : null,
     reset: reset ? new Date(Number(reset) * 1000) : null,
     cost: null,
   }

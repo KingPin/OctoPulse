@@ -73,6 +73,9 @@ export function Dashboard({
         isDemo={isDemo}
         isFetching={state.isFetching}
         lastUpdatedAt={state.lastUpdatedAt}
+        rateLimitRemaining={state.rateLimitRemaining}
+        rateLimitLimit={state.rateLimitLimit}
+        rateLimitResetAt={state.rateLimitResetAt}
         onRefresh={refresh}
         onOpenSettings={() => setSettingsOpen(true)}
         onSignOut={onSignOut}

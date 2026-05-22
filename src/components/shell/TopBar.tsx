@@ -15,6 +15,9 @@ interface Props {
   isDemo: boolean
   isFetching: boolean
   lastUpdatedAt: number | null
+  rateLimitRemaining: number | null
+  rateLimitLimit: number | null
+  rateLimitResetAt: number | null
   onRefresh: () => void
   onOpenSettings: () => void
   onSignOut: () => void
@@ -31,6 +34,45 @@ function formatLastUpdated(ts: number | null): string {
   if (delta < MINUTE_MS) return `${Math.floor(delta / SECOND_MS)}s ago`
   if (delta < HOUR_MS) return `${Math.floor(delta / MINUTE_MS)}m ago`
   return `${Math.floor(delta / HOUR_MS)}h ago`
+}
+
+function formatResetIn(resetAt: number | null): string {
+  if (resetAt === null) return ''
+  const delta = resetAt - Date.now()
+  if (delta <= 0) return 'now'
+  if (delta < MINUTE_MS) return `${Math.ceil(delta / SECOND_MS)}s`
+  if (delta < HOUR_MS) return `${Math.ceil(delta / MINUTE_MS)}m`
+  return `${Math.ceil(delta / HOUR_MS)}h`
+}
+
+interface RateLimitChipProps {
+  remaining: number
+  limit: number | null
+  resetAt: number | null
+}
+
+function RateLimitChip({ remaining, limit, resetAt }: RateLimitChipProps) {
+  const denom = limit ?? 5000
+  const ratio = remaining / denom
+  const low = ratio < 0.1
+  const warn = !low && ratio < 0.25
+  const tone = low
+    ? 'text-[var(--color-danger)] border-[var(--color-danger-border)] bg-[var(--color-danger-bg)]'
+    : warn
+      ? 'text-[var(--color-attention)] border-[var(--color-attention-border)] bg-[var(--color-attention-bg)]'
+      : 'text-[var(--color-fg-muted)] border-[var(--color-border)]'
+  const resetLabel = resetAt
+    ? `Resets in ${formatResetIn(resetAt)} (${new Date(resetAt).toLocaleTimeString()})`
+    : 'Reset time unknown'
+  return (
+    <span
+      className={`hidden sm:inline-flex items-center px-1.5 py-0.5 text-[11px] font-mono border rounded-md ${tone}`}
+      title={`GitHub API: ${remaining.toLocaleString()} of ${denom.toLocaleString()} remaining. ${resetLabel}.`}
+      aria-label={`GitHub API ${remaining} of ${denom} remaining`}
+    >
+      {remaining.toLocaleString()}/{denom.toLocaleString()}
+    </span>
+  )
 }
 
 function ThemeToggle() {
@@ -75,6 +117,9 @@ export function TopBar({
   isDemo,
   isFetching,
   lastUpdatedAt,
+  rateLimitRemaining,
+  rateLimitLimit,
+  rateLimitResetAt,
   onRefresh,
   onOpenSettings,
   onSignOut,
@@ -113,6 +158,14 @@ export function TopBar({
             Updated {formatLastUpdated(lastUpdatedAt)}
           </span>
         </div>
+
+        {!isDemo && rateLimitRemaining !== null && (
+          <RateLimitChip
+            remaining={rateLimitRemaining}
+            limit={rateLimitLimit}
+            resetAt={rateLimitResetAt}
+          />
+        )}
 
         <ThemeToggle />
 
