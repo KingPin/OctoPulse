@@ -39,3 +39,6 @@ coverage/
 .playwright-mcp/
 *.screenshot.png
 step*-*.png
+octopulse-*.png
+topbar-*.png
+pulse-*.png
