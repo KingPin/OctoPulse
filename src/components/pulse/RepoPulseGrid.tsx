@@ -25,6 +25,13 @@ const FILTER_ACTIVE_CLS: Record<Filter, string> = {
   green: 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[var(--color-success-border)]',
 }
 
+const FILTER_INACTIVE_CLS: Record<Filter, string> = {
+  all: 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]',
+  red: 'border-[var(--color-danger-border)] text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]',
+  amber: 'border-[var(--color-attention-border)] text-[var(--color-attention)] hover:bg-[var(--color-attention-bg)]',
+  green: 'border-[var(--color-success-border)] text-[var(--color-success)] hover:bg-[var(--color-success-bg)]',
+}
+
 export function RepoPulseGrid({ snapshots }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -69,9 +76,7 @@ export function RepoPulseGrid({ snapshots }: Props) {
               ? decorated.length
               : counts[value]
           const active = filter === value
-          const cls = active
-            ? FILTER_ACTIVE_CLS[value]
-            : 'border-[var(--color-border)] text-[var(--color-fg-muted)] hover:text-[var(--color-fg-default)]'
+          const cls = active ? FILTER_ACTIVE_CLS[value] : FILTER_INACTIVE_CLS[value]
           return (
             <button
               key={value}
