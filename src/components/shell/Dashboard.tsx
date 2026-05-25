@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ChevronRight,
   CircleAlert,
   CircleCheck,
   CircleDot,
@@ -39,25 +40,64 @@ interface SectionHeaderProps {
   count?: number
   caption?: string
   info?: React.ReactNode
+  collapsed?: boolean
+  onToggle?: () => void
+  controlsId?: string
 }
 
-function SectionHeader({ icon: Icon, title, count, caption, info }: SectionHeaderProps) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-3">
-      <div className="flex items-center gap-2">
-        <Icon
-          className="w-4 h-4 text-[var(--color-fg-muted)]"
+function SectionHeader({
+  icon: Icon,
+  title,
+  count,
+  caption,
+  info,
+  collapsed,
+  onToggle,
+  controlsId,
+}: SectionHeaderProps) {
+  const collapsible = typeof onToggle === 'function'
+  const titleRow = (
+    <>
+      {collapsible && (
+        <ChevronRight
+          className={`w-3.5 h-3.5 text-[var(--color-fg-subtle)] transition-transform ${
+            collapsed ? '' : 'rotate-90'
+          }`}
           aria-hidden
         />
-        <h2 className="text-base font-semibold">{title}</h2>
-        {typeof count === 'number' && (
-          <span className="text-xs font-mono text-[var(--color-fg-subtle)] px-1.5 py-0.5 bg-[var(--color-canvas-subtle)] rounded-md">
-            {count}
-          </span>
+      )}
+      <Icon className="w-4 h-4 text-[var(--color-fg-muted)]" aria-hidden />
+      <h2 className="text-base font-semibold">{title}</h2>
+      {typeof count === 'number' && (
+        <span className="text-xs font-mono text-[var(--color-fg-subtle)] px-1.5 py-0.5 bg-[var(--color-canvas-subtle)] rounded-md">
+          {count}
+        </span>
+      )}
+    </>
+  )
+  return (
+    <div
+      className={`flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 ${
+        collapsed ? '' : 'mb-3'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+            aria-controls={controlsId}
+            className="flex items-center gap-2 -ml-1 px-1 py-0.5 rounded hover:bg-[var(--color-canvas-subtle)] text-left"
+          >
+            {titleRow}
+          </button>
+        ) : (
+          titleRow
         )}
         {info}
       </div>
-      {caption && (
+      {caption && !collapsed && (
         <span className="text-xs text-[var(--color-fg-subtle)]">{caption}</span>
       )}
     </div>
@@ -143,6 +183,7 @@ function HealthLegend() {
 }
 
 type Visibility = 'all' | 'public' | 'private'
+type SectionKey = 'inbox' | 'pulse' | 'stale'
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string; Icon: typeof Globe }[] = [
   { value: 'all', label: 'All', Icon: GitBranch },
@@ -238,6 +279,22 @@ export function Dashboard({
     [filteredSnapshots],
   )
 
+  const [collapsed, setCollapsedState] = useState<Record<SectionKey, boolean>>(
+    () => ({
+      inbox: false,
+      pulse: false,
+      stale: false,
+      ...(storage.get<Partial<Record<SectionKey, boolean>>>('collapsedSections') ?? {}),
+    }),
+  )
+  const toggleSection = (key: SectionKey) => {
+    setCollapsedState((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      storage.set('collapsedSections', next)
+      return next
+    })
+  }
+
   return (
     <main className="min-h-screen flex flex-col">
       <TopBar
@@ -304,13 +361,20 @@ export function Dashboard({
                     title="Action Required"
                     count={inboxCount}
                     caption="Items that need your attention"
+                    collapsed={collapsed.inbox}
+                    onToggle={() => toggleSection('inbox')}
+                    controlsId="section-inbox"
                   />
-                  <ActionInbox
-                    snapshots={filteredSnapshots}
-                    viewerLogin={viewer.login}
-                    isDemo={isDemo}
-                    onMutated={refresh}
-                  />
+                  {!collapsed.inbox && (
+                    <div id="section-inbox">
+                      <ActionInbox
+                        snapshots={filteredSnapshots}
+                        viewerLogin={viewer.login}
+                        isDemo={isDemo}
+                        onMutated={refresh}
+                      />
+                    </div>
+                  )}
                 </section>
 
                 <section aria-label="Repository pulse">
@@ -320,8 +384,15 @@ export function Dashboard({
                     count={filteredSnapshots.length}
                     caption="Health of each tracked repo"
                     info={<HealthLegend />}
+                    collapsed={collapsed.pulse}
+                    onToggle={() => toggleSection('pulse')}
+                    controlsId="section-pulse"
                   />
-                  <RepoPulseGrid snapshots={filteredSnapshots} />
+                  {!collapsed.pulse && (
+                    <div id="section-pulse">
+                      <RepoPulseGrid snapshots={filteredSnapshots} />
+                    </div>
+                  )}
                 </section>
 
                 <section aria-label="Stale watch">
@@ -330,12 +401,19 @@ export function Dashboard({
                     title="Stale Watch"
                     count={staleCount}
                     caption="Open ≥7d without movement"
+                    collapsed={collapsed.stale}
+                    onToggle={() => toggleSection('stale')}
+                    controlsId="section-stale"
                   />
-                  <StaleWatch
-                    snapshots={filteredSnapshots}
-                    isDemo={isDemo}
-                    onMutated={refresh}
-                  />
+                  {!collapsed.stale && (
+                    <div id="section-stale">
+                      <StaleWatch
+                        snapshots={filteredSnapshots}
+                        isDemo={isDemo}
+                        onMutated={refresh}
+                      />
+                    </div>
+                  )}
                 </section>
               </>
             )}

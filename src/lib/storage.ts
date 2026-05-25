@@ -9,6 +9,7 @@ export type StorageKey =
   | 'lastFetchAt'
   | 'hideStaleBots'
   | 'visibilityFilter'
+  | 'collapsedSections'
 
 export function get<T>(key: StorageKey): T | null {
   try {
