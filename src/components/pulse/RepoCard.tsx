@@ -28,9 +28,12 @@ function formatAge(iso: string | null | undefined): string {
 }
 
 function formatCount(n: number): string {
+  const abbrev = (value: number, suffix: string): string =>
+    `${value < 10 ? value.toFixed(1).replace(/\.0$/, '') : Math.round(value)}${suffix}`
   if (n < 1000) return String(n)
-  if (n < 10000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`
-  return `${Math.round(n / 1000)}k`
+  if (n < 1_000_000) return abbrev(n / 1000, 'k')
+  if (n < 1_000_000_000) return abbrev(n / 1_000_000, 'm')
+  return abbrev(n / 1_000_000_000, 'b')
 }
 
 const HEALTH_RING: Record<Health, string> = {
@@ -86,6 +89,7 @@ export function RepoCard({ repo }: Props) {
           <span
             className="flex items-center gap-0.5 text-xs font-mono"
             title={`${repo.stargazerCount.toLocaleString()} stars`}
+            aria-label={`${repo.stargazerCount.toLocaleString()} stars`}
           >
             <Star className="w-3 h-3" aria-hidden />
             {formatCount(repo.stargazerCount)}
@@ -93,12 +97,13 @@ export function RepoCard({ repo }: Props) {
           <span
             className="flex items-center gap-0.5 text-xs font-mono"
             title={`${repo.forkCount.toLocaleString()} forks`}
+            aria-label={`${repo.forkCount.toLocaleString()} forks`}
           >
             <GitFork className="w-3 h-3" aria-hidden />
             {formatCount(repo.forkCount)}
           </span>
           <ExternalLink
-            className="w-3.5 h-3.5 text-[var(--color-fg-subtle)] opacity-0 group-hover:opacity-100"
+            className="w-3.5 h-3.5 text-[var(--color-fg-subtle)] opacity-0 group-hover:opacity-100 shrink-0"
             aria-hidden
           />
         </div>
