@@ -25,6 +25,8 @@ function makeRepo(opts: {
     isPrivate: false,
     isFork: false,
     isArchived: false,
+    stargazerCount: 0,
+    forkCount: 0,
     pushedAt: '2026-05-18T00:00:00Z',
     defaultBranchRef: null,
     issues: { totalCount: opts.issues?.length ?? 0, nodes: opts.issues ?? [] },

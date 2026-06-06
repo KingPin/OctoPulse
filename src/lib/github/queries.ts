@@ -16,6 +16,8 @@ export const REPO_QUERY = /* GraphQL */ `
       isPrivate
       isFork
       isArchived
+      stargazerCount
+      forkCount
       pushedAt
       defaultBranchRef {
         name
