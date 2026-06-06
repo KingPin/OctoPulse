@@ -99,6 +99,8 @@ export interface RepoSnapshot {
   isPrivate: boolean
   isFork: boolean
   isArchived: boolean
+  stargazerCount: number
+  forkCount: number
   pushedAt: string
   defaultBranchRef: {
     name: string

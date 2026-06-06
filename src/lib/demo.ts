@@ -22,6 +22,8 @@ export const DEMO_REPOS: RepoSnapshot[] = [
     isPrivate: false,
     isFork: false,
     isArchived: false,
+    stargazerCount: 1284,
+    forkCount: 96,
     pushedAt: daysAgo(1),
     defaultBranchRef: {
       name: 'main',
@@ -135,6 +137,8 @@ export const DEMO_REPOS: RepoSnapshot[] = [
     isPrivate: true,
     isFork: false,
     isArchived: false,
+    stargazerCount: 312,
+    forkCount: 28,
     pushedAt: daysAgo(0),
     defaultBranchRef: {
       name: 'main',
@@ -208,6 +212,8 @@ export const DEMO_REPOS: RepoSnapshot[] = [
     isPrivate: false,
     isFork: false,
     isArchived: false,
+    stargazerCount: 47,
+    forkCount: 12,
     pushedAt: daysAgo(0),
     defaultBranchRef: {
       name: 'main',
@@ -230,6 +236,8 @@ export const DEMO_REPOS: RepoSnapshot[] = [
     isPrivate: false,
     isFork: true,
     isArchived: false,
+    stargazerCount: 8,
+    forkCount: 3,
     pushedAt: daysAgo(45),
     defaultBranchRef: {
       name: 'master',
